@@ -30,9 +30,11 @@
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
 
+#include <nav_msgs/Odometry.h>
+
 #include<opencv2/core/core.hpp>
 
-#include"include/System.h"
+#include<include/System.h>
 
 using namespace std;
 
@@ -109,11 +111,16 @@ int main(int argc, char **argv)
 
     ros::NodeHandle nh;
 
-    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/camera/left/image_raw", 1);
-    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "camera/right/image_raw", 1);
+//  message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/camera/left/image_raw", 1);
+//    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "camera/right/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/cam0/image_raw", 1);
+    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/cam1/image_raw", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), left_sub,right_sub);
     sync.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2));
+
+    ros::Publisher pubHandle=nh.advertise<nav_msgs::Odometry>("orb_slam2/odometry", 1);
+    SLAM.SetPublisherHandle(pubHandle);
 
     ros::spin();
 
@@ -132,7 +139,7 @@ int main(int argc, char **argv)
 
 void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight)
 {
-    // Copy the ros image message to cv::Mat.
+	// Copy the ros image message to cv::Mat.
     cv_bridge::CvImageConstPtr cv_ptrLeft;
     try
     {

@@ -25,6 +25,9 @@
 #include <thread>
 #include <pangolin/pangolin.h>
 #include <iomanip>
+#include <geometry_msgs/Pose.h>
+
+
 
 namespace ORB_SLAM2
 {
@@ -153,7 +156,7 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const
         mbReset = false;
     }
     }
-
+    PublishOdometry();
     return mpTracker->GrabImageStereo(imLeft,imRight,timestamp);
 }
 
@@ -246,6 +249,59 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
 
     return mpTracker->GrabImageMonocular(im,timestamp);
 }
+
+
+void System::PublishOdometry()
+{
+
+
+
+
+	nav_msgs::Odometry odometryMsg;
+
+	if(!(mpTracker->mCurrentFrame).mTcw.empty())
+	{
+
+		cv::Mat Tcw = (mpTracker->mCurrentFrame).mTcw.clone();
+		cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
+		cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
+	    vector<float> q = Converter::toQuaternion(Rwc);
+
+		// odometryMsg.header.seq = msgSeq_;
+		// odometryMsg.header.seq = 1;
+		odometryMsg.header.stamp = ros::Time::now();
+		odometryMsg.pose.pose.position.x = twc.at<float>(0);
+		odometryMsg.pose.pose.position.y = twc.at<float>(1);
+		odometryMsg.pose.pose.position.z = twc.at<float>(2);
+
+		odometryMsg.pose.pose.orientation.x = q[0];
+		odometryMsg.pose.pose.orientation.y = q[1];
+		odometryMsg.pose.pose.orientation.z = q[2];
+		odometryMsg.pose.pose.orientation.w = q[3];
+
+		for(unsigned int i=0;i<6;i++){
+		  for(unsigned int j=0;j<6;j++){
+			odometryMsg.pose.covariance[j+6*i] = 0;
+		  }
+		}
+
+		odometryMsg.twist.twist.linear.x = 0;
+		odometryMsg.twist.twist.linear.y = 0;
+		odometryMsg.twist.twist.linear.z = 0;
+		odometryMsg.twist.twist.angular.x = 0;
+		odometryMsg.twist.twist.angular.y = 0;
+		odometryMsg.twist.twist.angular.z = 0;
+
+		for(unsigned int i=0;i<6;i++){
+		  for(unsigned int j=0;j<6;j++){
+			odometryMsg.twist.covariance[j+6*i] = 0;
+		  }
+		}
+
+		publisherHandle.publish(odometryMsg);
+	}
+}
+
 
 void System::ActivateLocalizationMode()
 {
@@ -421,6 +477,11 @@ void System::SaveTrajectoryKITTI(const string &filename)
     }
     f.close();
     cout << endl << "trajectory saved!" << endl;
+}
+
+void System::SetPublisherHandle(const ros::Publisher pubHandle)
+{
+	publisherHandle = pubHandle;
 }
 
 } //namespace ORB_SLAM

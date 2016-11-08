@@ -36,6 +36,10 @@
 #include "ORBVocabulary.h"
 #include "Viewer.h"
 
+#include <geometry_msgs/Pose.h>
+#include <nav_msgs/Odometry.h>
+#include "ros/ros.h"
+
 namespace ORB_SLAM2
 {
 
@@ -77,6 +81,9 @@ public:
     // Returns the camera pose (empty if tracking fails).
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
+    // Publishes current odometry state to rostopic orb_slam2/odometry
+    void PublishOdometry();
+
     // This stops local mapping thread (map building) and performs only camera tracking.
     void ActivateLocalizationMode();
     // This resumes local mapping thread and performs SLAM again.
@@ -105,6 +112,10 @@ public:
     // Call first Shutdown()
     // See format details at: http://www.cvlibs.net/datasets/kitti/eval_odometry.php
     void SaveTrajectoryKITTI(const string &filename);
+
+    // Sets the handle to the ROS publisher
+    void SetPublisherHandle(const ros::Publisher pubHandle);
+
 
     // TODO: Save/Load functions
     // SaveMap(const string &filename);
@@ -156,6 +167,9 @@ private:
     std::mutex mMutexMode;
     bool mbActivateLocalizationMode;
     bool mbDeactivateLocalizationMode;
+
+    // Handle for ROS message publishing
+    ros::Publisher publisherHandle;
 };
 
 }// namespace ORB_SLAM

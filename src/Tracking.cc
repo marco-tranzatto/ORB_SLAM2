@@ -312,12 +312,15 @@ void Tracking::Track()
                 {
                     bOK = TrackWithMotionModel();
                     if(!bOK)
+                    {
                         bOK = TrackReferenceKeyFrame();
+                    }
                 }
             }
             else
             {
                 bOK = Relocalization();
+                cout << "Relocalizing..." << endl;
             }
         }
         else
@@ -504,6 +507,7 @@ void Tracking::Track()
     }
 
 }
+
 
 
 void Tracking::StereoInitialization()
