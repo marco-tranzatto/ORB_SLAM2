@@ -47,9 +47,11 @@ public:
 
     static Eigen::Matrix<double,3,1> toVector3d(const cv::Mat &cvVector);
     static Eigen::Matrix<double,3,1> toVector3d(const cv::Point3f &cvPoint);
+    static Eigen::Matrix<double,4,1> toVector4d(const cv::Mat &cvVector);
     static Eigen::Matrix<double,3,3> toMatrix3d(const cv::Mat &cvMat3);
 
     static std::vector<float> toQuaternion(const cv::Mat &M);
+    static cv::Mat toHomogeneousTransform(const cv::Mat &position, const cv::Mat &orientation);
 };
 
 }// namespace ORB_SLAM

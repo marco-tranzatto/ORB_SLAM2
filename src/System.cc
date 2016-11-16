@@ -104,6 +104,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     mpTracker->SetViewer(mpViewer);
 
+
     //Set pointers between threads
     mpTracker->SetLocalMapper(mpLocalMapper);
     mpTracker->SetLoopClosing(mpLoopCloser);
@@ -250,26 +251,25 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
     return mpTracker->GrabImageMonocular(im,timestamp);
 }
 
+void System::SetPublisherHandle(const ros::Publisher pubHandle)
+{
+    publisherHandle = pubHandle;
+}
 
 void System::PublishOdometry()
 {
-
-
-
-
-	nav_msgs::Odometry odometryMsg;
-
-	if(!(mpTracker->mCurrentFrame).mTcw.empty())
+	if(!((mpTracker->mCurrentFrame).mTcw.empty()))
 	{
+        nav_msgs::Odometry odometryMsg;
 
 		cv::Mat Tcw = (mpTracker->mCurrentFrame).mTcw.clone();
-		cv::Mat Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
-		cv::Mat twc = -Rwc*Tcw.rowRange(0,3).col(3);
+		cv::MatExpr Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
+		cv::Mat twc = -(Rwc*Tcw.rowRange(0,3).col(3));
 	    vector<float> q = Converter::toQuaternion(Rwc);
 
 		// odometryMsg.header.seq = msgSeq_;
 		// odometryMsg.header.seq = 1;
-		odometryMsg.header.stamp = ros::Time::now();
+		//odometryMsg.header.stamp = ros::Time::now();
 		odometryMsg.pose.pose.position.x = twc.at<float>(0);
 		odometryMsg.pose.pose.position.y = twc.at<float>(1);
 		odometryMsg.pose.pose.position.z = twc.at<float>(2);
@@ -300,6 +300,33 @@ void System::PublishOdometry()
 
 		publisherHandle.publish(odometryMsg);
 	}
+}
+
+// Check whether the tracker initial pose was initialized
+bool System::CheckTrackerInitialization()
+{
+    if(mpTracker->mInitialPosition.at<float>(3,3) > 0)
+        return 1;
+    else
+        return 0;
+}
+
+void System::SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry)
+{
+   cv::Mat position(3, 1, CV_32F);
+   cv::Mat orientation(4, 1, CV_32F);
+
+   position.at<double>(0) = msgOdometry->pose.pose.position.x;
+   position.at<double>(1) = msgOdometry->pose.pose.position.y;
+   position.at<double>(2) = msgOdometry->pose.pose.position.z;
+
+   orientation.at<double>(0) = msgOdometry->pose.pose.orientation.w;
+   orientation.at<double>(1) = msgOdometry->pose.pose.orientation.x;
+   orientation.at<double>(2) = msgOdometry->pose.pose.orientation.y;
+   orientation.at<double>(3) = msgOdometry->pose.pose.orientation.z;
+    cv::Mat H_wc = Converter::toHomogeneousTransform(position, orientation);
+
+   mpTracker->mInitialPosition = Converter::toCvMat(Converter::toSE3Quat(H_wc).inverse());
 }
 
 
@@ -477,11 +504,6 @@ void System::SaveTrajectoryKITTI(const string &filename)
     }
     f.close();
     cout << endl << "trajectory saved!" << endl;
-}
-
-void System::SetPublisherHandle(const ros::Publisher pubHandle)
-{
-	publisherHandle = pubHandle;
 }
 
 } //namespace ORB_SLAM

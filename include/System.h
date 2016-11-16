@@ -81,9 +81,6 @@ public:
     // Returns the camera pose (empty if tracking fails).
     cv::Mat TrackMonocular(const cv::Mat &im, const double &timestamp);
 
-    // Publishes current odometry state to rostopic orb_slam2/odometry
-    void PublishOdometry();
-
     // This stops local mapping thread (map building) and performs only camera tracking.
     void ActivateLocalizationMode();
     // This resumes local mapping thread and performs SLAM again.
@@ -115,6 +112,15 @@ public:
 
     // Sets the handle to the ROS publisher
     void SetPublisherHandle(const ros::Publisher pubHandle);
+
+    // Publishes current odometry state to rostopic orb_slam2/odometry
+    void PublishOdometry();
+
+    // Check whether the tracker initial pose was initialized
+    bool CheckTrackerInitialization();
+
+    // Set initial tracker pose provided by external measurement
+    void SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry);
 
 
     // TODO: Save/Load functions

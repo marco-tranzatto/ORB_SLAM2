@@ -115,6 +115,13 @@ Eigen::Matrix<double,3,1> Converter::toVector3d(const cv::Mat &cvVector)
     return v;
 }
 
+Eigen::Matrix<double,4,1> Converter::toVector4d(const cv::Mat &cvVector)
+{
+    Eigen::Matrix<double,4,1> v;
+    v << cvVector.at<float>(0), cvVector.at<float>(1), cvVector.at<float>(2), cvVector.at<float>(3);
+     return v;
+}
+
 Eigen::Matrix<double,3,1> Converter::toVector3d(const cv::Point3f &cvPoint)
 {
     Eigen::Matrix<double,3,1> v;
@@ -146,6 +153,16 @@ std::vector<float> Converter::toQuaternion(const cv::Mat &M)
     v[3] = q.w();
 
     return v;
+}
+
+cv::Mat Converter::toHomogeneousTransform(const cv::Mat &position, const cv::Mat &orientation)
+{
+    g2o::SE3Quat Quat;
+    Quat.setTranslation(toVector3d(position));
+    Quat.setRotation(Eigen::Quaternion<double>(toVector4d(orientation)));
+
+    Eigen::Matrix<double,4,4> eigMat = Quat.to_homogeneous_matrix();
+    return toCvMat(eigMat);
 }
 
 } //namespace ORB_SLAM

@@ -146,6 +146,8 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
             mDepthMapFactor = 1.0f/mDepthMapFactor;
     }
 
+    mInitialPosition = cv::Mat::eye(4,4,CV_32F);
+    mInitialPosition.at<float>(3,3) = -1.0;
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -340,6 +342,7 @@ void Tracking::Track()
                     if(!mVelocity.empty())
                     {
                         bOK = TrackWithMotionModel();
+                        cout << "attempting motion model tracking: " << bOK << endl;
                     }
                     else
                     {
@@ -515,7 +518,8 @@ void Tracking::StereoInitialization()
     if(mCurrentFrame.N>500)
     {
         // Set Frame pose to the origin
-        mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
+        //mCurrentFrame.SetPose(cv::Mat::eye(4,4,CV_32F));
+        mCurrentFrame.SetPose(mInitialPosition);
 
         // Create KeyFrame
         KeyFrame* pKFini = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
