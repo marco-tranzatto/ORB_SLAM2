@@ -110,7 +110,7 @@ cv::Mat Converter::toCvSE3(const Eigen::Matrix<double,3,3> &R, const Eigen::Matr
 Eigen::Matrix<double,3,1> Converter::toVector3d(const cv::Mat &cvVector)
 {
     Eigen::Matrix<double,3,1> v;
-    v << cvVector.at<float>(0), cvVector.at<float>(1), cvVector.at<float>(2);
+    v << cvVector.at<double>(0), cvVector.at<double>(1), cvVector.at<double>(2);
 
     return v;
 }
@@ -118,7 +118,7 @@ Eigen::Matrix<double,3,1> Converter::toVector3d(const cv::Mat &cvVector)
 Eigen::Matrix<double,4,1> Converter::toVector4d(const cv::Mat &cvVector)
 {
     Eigen::Matrix<double,4,1> v;
-    v << cvVector.at<float>(0), cvVector.at<float>(1), cvVector.at<float>(2), cvVector.at<float>(3);
+    v << cvVector.at<double>(0), cvVector.at<double>(1), cvVector.at<double>(2), cvVector.at<double>(3);
      return v;
 }
 

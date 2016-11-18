@@ -313,20 +313,33 @@ bool System::CheckTrackerInitialization()
 
 void System::SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry)
 {
-   cv::Mat position(3, 1, CV_32F);
-   cv::Mat orientation(4, 1, CV_32F);
+    cv::Mat position(3, 1, cv::DataType<double>::type);
+    cv::Mat orientation(4, 1, cv::DataType<double>::type);
+    position.at<double>(0) = msgOdometry->pose.pose.position.x;
+    cout << "received x " << msgOdometry->pose.pose.position.x << endl;
+    position.at<double>(1) = msgOdometry->pose.pose.position.y;
+    cout << "received y " << msgOdometry->pose.pose.position.x << endl;
+    position.at<double>(2) = msgOdometry->pose.pose.position.z;
+    cout << "received z " << msgOdometry->pose.pose.position.x << endl;
 
-   position.at<double>(0) = msgOdometry->pose.pose.position.x;
-   position.at<double>(1) = msgOdometry->pose.pose.position.y;
-   position.at<double>(2) = msgOdometry->pose.pose.position.z;
+    orientation.at<double>(0) = msgOdometry->pose.pose.orientation.w;
+    orientation.at<double>(1) = msgOdometry->pose.pose.orientation.x;
+    orientation.at<double>(2) = msgOdometry->pose.pose.orientation.y;
+    orientation.at<double>(3) = msgOdometry->pose.pose.orientation.z;
 
-   orientation.at<double>(0) = msgOdometry->pose.pose.orientation.w;
-   orientation.at<double>(1) = msgOdometry->pose.pose.orientation.x;
-   orientation.at<double>(2) = msgOdometry->pose.pose.orientation.y;
-   orientation.at<double>(3) = msgOdometry->pose.pose.orientation.z;
+    cout << "received position " << position << endl;
+
+    cout << "received orientation" << orientation << endl;
+
     cv::Mat H_wc = Converter::toHomogeneousTransform(position, orientation);
 
-   mpTracker->mInitialPosition = Converter::toCvMat(Converter::toSE3Quat(H_wc).inverse());
+    cout << "received initial homo transform: " << H_wc << endl;
+
+    mpTracker->mInitialPosition = Converter::toCvMat(Converter::toSE3Quat(H_wc).inverse());
+
+    cout << "calculated inverse quat" << Converter::toSE3Quat(H_wc).inverse() << endl;
+
+    cout << "initial position set to" << mpTracker->mInitialPosition << endl;
 }
 
 

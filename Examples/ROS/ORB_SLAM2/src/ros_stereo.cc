@@ -44,6 +44,7 @@ public:
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM){}
 
     void GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight);
+    void OdometryCallback(const nav_msgs::OdometryConstPtr& msgOdometry);
 
     ORB_SLAM2::System* mpSLAM;
     bool do_rectify;
@@ -111,16 +112,20 @@ int main(int argc, char **argv)
 
     ros::NodeHandle nh;
 
-//  message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/camera/left/image_raw", 1);
-//    message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "camera/right/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/cam0/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/cam1/image_raw", 1);
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), left_sub,right_sub);
     sync.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2));
 
-    ros::Publisher pubHandle=nh.advertise<nav_msgs::Odometry>("orb_slam2/odometry", 1);
+    ros::Publisher pubHandle = nh.advertise<nav_msgs::Odometry>("orb_slam2/odometry", 1);
     SLAM.SetPublisherHandle(pubHandle);
+
+    ros::Subscriber subHandle = nh.subscribe("/rovio/odometry", 1, &ImageGrabber::OdometryCallback, &igb);
+    //message_filters::Subscriber<nav_msgs::Odometry> subHandle(nh, "/rovio/odometry", 1);
+    //subHandle.registerCallback(boost::bind(&ImageGrabber::OdometryCallback,&igb,_1));
+
+    cout << "start spinning" << endl;
 
     ros::spin();
 
@@ -139,41 +144,51 @@ int main(int argc, char **argv)
 
 void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight)
 {
-	// Copy the ros image message to cv::Mat.
-    cv_bridge::CvImageConstPtr cv_ptrLeft;
-    try
-    {
-        cv_ptrLeft = cv_bridge::toCvShare(msgLeft);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
+	if(mpSLAM->CheckTrackerInitialization()) {
+        // Copy the ros image message to cv::Mat.
+        cv_bridge::CvImageConstPtr cv_ptrLeft;
+        try {
+            cv_ptrLeft = cv_bridge::toCvShare(msgLeft);
+        }
+        catch (cv_bridge::Exception &e) {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+
+        cv_bridge::CvImageConstPtr cv_ptrRight;
+        try {
+            cv_ptrRight = cv_bridge::toCvShare(msgRight);
+        }
+        catch (cv_bridge::Exception &e) {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
+
+        if (do_rectify) {
+            cv::Mat imLeft, imRight;
+            cv::remap(cv_ptrLeft->image, imLeft, M1l, M2l, cv::INTER_LINEAR);
+            cv::remap(cv_ptrRight->image, imRight, M1r, M2r, cv::INTER_LINEAR);
+            mpSLAM->TrackStereo(imLeft, imRight, cv_ptrLeft->header.stamp.toSec());
+        } else {
+            mpSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, cv_ptrLeft->header.stamp.toSec());
+        }
+        cout << "evaluating image callback" << endl;
     }
 
-    cv_bridge::CvImageConstPtr cv_ptrRight;
-    try
-    {
-        cv_ptrRight = cv_bridge::toCvShare(msgRight);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
+}
 
-    if(do_rectify)
+
+void ImageGrabber::OdometryCallback(const nav_msgs::OdometryConstPtr& msgOdometry)
+{
+    if(mpSLAM->CheckTrackerInitialization())
     {
-        cv::Mat imLeft, imRight;
-        cv::remap(cv_ptrLeft->image,imLeft,M1l,M2l,cv::INTER_LINEAR);
-        cv::remap(cv_ptrRight->image,imRight,M1r,M2r,cv::INTER_LINEAR);
-        mpSLAM->TrackStereo(imLeft,imRight,cv_ptrLeft->header.stamp.toSec());
+        return;
     }
     else
     {
-        mpSLAM->TrackStereo(cv_ptrLeft->image,cv_ptrRight->image,cv_ptrLeft->header.stamp.toSec());
+        mpSLAM->SetTrackerInitialPose(msgOdometry);
     }
-
+    cout << "setting initial position using rovio" << endl;
 }
 
 
