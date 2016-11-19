@@ -31,6 +31,7 @@
 #include <message_filters/sync_policies/approximate_time.h>
 
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 
 #include<opencv2/core/core.hpp>
 
@@ -44,7 +45,7 @@ public:
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM){}
 
     void GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight);
-    void OdometryCallback(const nav_msgs::OdometryConstPtr& msgOdometry);
+    void PoseCallback(const nav_msgs::OdometryConstPtr& msgOdometry, const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
 
     ORB_SLAM2::System* mpSLAM;
     bool do_rectify;
@@ -121,9 +122,12 @@ int main(int argc, char **argv)
     ros::Publisher pubHandle = nh.advertise<nav_msgs::Odometry>("orb_slam2/odometry", 1);
     SLAM.SetPublisherHandle(pubHandle);
 
-    ros::Subscriber subHandle = nh.subscribe("/rovio/odometry", 1, &ImageGrabber::OdometryCallback, &igb);
-    //message_filters::Subscriber<nav_msgs::Odometry> subHandle(nh, "/rovio/odometry", 1);
-    //subHandle.registerCallback(boost::bind(&ImageGrabber::OdometryCallback,&igb,_1));
+    //ros::Subscriber subHandle = nh.subscribe("/rovio/odometry", 1, &ImageGrabber::OdometryCallback, &igb);
+    message_filters::Subscriber<nav_msgs::Odometry> odometry_sub(nh, "/rovio/odometry", 1);
+    message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped> extrinsics_sub(nh, "/rovio/extrinsics0", 1);
+    typedef message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry, geometry_msgs::PoseWithCovarianceStamped> sync_pol_odo;
+    message_filters::Synchronizer<sync_pol_odo> sync_odo(sync_pol_odo(10), odometry_sub, extrinsics_sub);
+    sync_odo.registerCallback(boost::bind(&ImageGrabber::PoseCallback,&igb,_1,_2));
 
     cout << "start spinning" << endl;
 
@@ -172,23 +176,21 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
         } else {
             mpSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, cv_ptrLeft->header.stamp.toSec());
         }
-        cout << "evaluating image callback" << endl;
     }
 
 }
 
 
-void ImageGrabber::OdometryCallback(const nav_msgs::OdometryConstPtr& msgOdometry)
+void ImageGrabber::PoseCallback(const nav_msgs::OdometryConstPtr& msgOdometry, const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
 {
     if(mpSLAM->CheckTrackerInitialization())
     {
-        return;
+      return;
     }
     else
     {
-        mpSLAM->SetTrackerInitialPose(msgOdometry);
+      mpSLAM->SetTrackerInitialPose(msgOdometry, msgPose);
     }
-    cout << "setting initial position using rovio" << endl;
 }
 
 

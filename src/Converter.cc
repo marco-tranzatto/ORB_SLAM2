@@ -70,6 +70,16 @@ cv::Mat Converter::toCvMat(const Eigen::Matrix<double,4,4> &m)
     return cvMat.clone();
 }
 
+cv::Mat Converter::toCvMat(const Eigen::Transform<double,3,0> &m)
+{
+  cv::Mat cvMat(4,4,CV_32F);
+  for(int i=0;i<4;i++)
+    for(int j=0; j<4; j++)
+      cvMat.at<float>(i,j)=m(i,j);
+
+  return cvMat.clone();
+}
+
 cv::Mat Converter::toCvMat(const Eigen::Matrix3d &m)
 {
     cv::Mat cvMat(3,3,CV_32F);
@@ -157,7 +167,7 @@ std::vector<float> Converter::toQuaternion(const cv::Mat &M)
 
 cv::Mat Converter::toHomogeneousTransform(const cv::Mat &position, const cv::Mat &orientation)
 {
-    g2o::SE3Quat Quat;
+  g2o::SE3Quat Quat;
     Quat.setTranslation(toVector3d(position));
     Quat.setRotation(Eigen::Quaternion<double>(toVector4d(orientation)));
 

@@ -25,7 +25,7 @@
 #include <thread>
 #include <pangolin/pangolin.h>
 #include <iomanip>
-#include <geometry_msgs/Pose.h>
+
 
 
 
@@ -260,7 +260,7 @@ void System::PublishOdometry()
 {
 	if(!((mpTracker->mCurrentFrame).mTcw.empty()))
 	{
-        nav_msgs::Odometry odometryMsg;
+    nav_msgs::Odometry odometryMsg;
 
 		cv::Mat Tcw = (mpTracker->mCurrentFrame).mTcw.clone();
 		cv::MatExpr Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
@@ -311,35 +311,39 @@ bool System::CheckTrackerInitialization()
         return 0;
 }
 
-void System::SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry)
+void System::SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry, const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
 {
-    cv::Mat position(3, 1, cv::DataType<double>::type);
-    cv::Mat orientation(4, 1, cv::DataType<double>::type);
-    position.at<double>(0) = msgOdometry->pose.pose.position.x;
-    cout << "received x " << msgOdometry->pose.pose.position.x << endl;
-    position.at<double>(1) = msgOdometry->pose.pose.position.y;
-    cout << "received y " << msgOdometry->pose.pose.position.x << endl;
-    position.at<double>(2) = msgOdometry->pose.pose.position.z;
-    cout << "received z " << msgOdometry->pose.pose.position.x << endl;
+  Eigen::Vector3d tw_imu(
+          msgOdometry->pose.pose.position.x,
+          msgOdometry->pose.pose.position.y,
+          msgOdometry->pose.pose.position.z
+  );
 
-    orientation.at<double>(0) = msgOdometry->pose.pose.orientation.w;
-    orientation.at<double>(1) = msgOdometry->pose.pose.orientation.x;
-    orientation.at<double>(2) = msgOdometry->pose.pose.orientation.y;
-    orientation.at<double>(3) = msgOdometry->pose.pose.orientation.z;
+  Eigen::Quaterniond Qw_imu(
+          -msgOdometry->pose.pose.orientation.w,
+          msgOdometry->pose.pose.orientation.x,
+          msgOdometry->pose.pose.orientation.y,
+          msgOdometry->pose.pose.orientation.z
+  );
 
-    cout << "received position " << position << endl;
+  Eigen::Vector3d timu_c(
+          msgPose->pose.pose.position.x,
+          msgPose->pose.pose.position.y,
+          msgPose->pose.pose.position.z
+  );
 
-    cout << "received orientation" << orientation << endl;
+  Eigen::Quaterniond Qimu_c(
+          msgPose->pose.pose.orientation.w,
+          msgPose->pose.pose.orientation.x,
+          msgPose->pose.pose.orientation.y,
+          msgPose->pose.pose.orientation.z
+  );
 
-    cv::Mat H_wc = Converter::toHomogeneousTransform(position, orientation);
+  Eigen::Transform<double,3,0> Twc(Qw_imu.toRotationMatrix()*Qimu_c.toRotationMatrix());
+  Twc.pretranslate(tw_imu + Qw_imu.toRotationMatrix()*timu_c);
 
-    cout << "received initial homo transform: " << H_wc << endl;
-
-    mpTracker->mInitialPosition = Converter::toCvMat(Converter::toSE3Quat(H_wc).inverse());
-
-    cout << "calculated inverse quat" << Converter::toSE3Quat(H_wc).inverse() << endl;
-
-    cout << "initial position set to" << mpTracker->mInitialPosition << endl;
+  //Eigen::Transform Tcw = Twc.inverse();
+  mpTracker->mInitialPosition = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
 }
 
 

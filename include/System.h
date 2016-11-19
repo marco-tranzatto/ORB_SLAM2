@@ -37,6 +37,7 @@
 #include "Viewer.h"
 
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <nav_msgs/Odometry.h>
 #include "ros/ros.h"
 
@@ -120,7 +121,7 @@ public:
     bool CheckTrackerInitialization();
 
     // Set initial tracker pose provided by external measurement
-    void SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry);
+    void SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry, const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
 
 
     // TODO: Save/Load functions
