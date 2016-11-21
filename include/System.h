@@ -121,7 +121,12 @@ public:
     bool CheckTrackerInitialization();
 
     // Set initial tracker pose provided by external measurement
-    void SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry, const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
+    void SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry,
+                               const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
+
+
+    void SetMotionModel(const nav_msgs::OdometryConstPtr& msgOdometry,
+                        const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
 
 
     // TODO: Save/Load functions

@@ -103,8 +103,9 @@ public:
     std::vector<cv::Point3f> mvIniP3D;
     Frame mInitialFrame;
 
-    // Buffer for initialization using external pose measurement
+    // Buffers for initialization and motion estimation via external odometry
     cv::Mat mInitialPosition;
+    cv::Mat mExternalPoseMeas;
 
     // Lists used to recover the full camera trajectory at the end of the execution.
     // Basically we store the reference keyframe for each frame and its relative transformation
@@ -146,6 +147,8 @@ protected:
 
     bool NeedNewKeyFrame();
     void CreateNewKeyFrame();
+
+    void UpdateMotionModel();
 
 
     // In case of performing only localization, this flag is true when there are no matches to

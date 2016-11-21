@@ -117,10 +117,44 @@ cv::Mat Converter::toCvSE3(const Eigen::Matrix<double,3,3> &R, const Eigen::Matr
     return cvMat.clone();
 }
 
+Eigen::Transform<double,3,0> Converter::toEigenTf(const nav_msgs::OdometryConstPtr& msgOdometry,
+                                                const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
+{
+  Eigen::Vector3d tw_imu(
+          msgOdometry->pose.pose.position.x,
+          msgOdometry->pose.pose.position.y,
+          msgOdometry->pose.pose.position.z
+  );
+
+  Eigen::Quaterniond Qw_imu(
+          msgOdometry->pose.pose.orientation.w,
+          msgOdometry->pose.pose.orientation.x,
+          msgOdometry->pose.pose.orientation.y,
+          msgOdometry->pose.pose.orientation.z
+  );
+
+  Eigen::Vector3d timu_c(
+          msgPose->pose.pose.position.x,
+          msgPose->pose.pose.position.y,
+          msgPose->pose.pose.position.z
+  );
+
+  Eigen::Quaterniond Qimu_c(
+          msgPose->pose.pose.orientation.w,
+          msgPose->pose.pose.orientation.x,
+          msgPose->pose.pose.orientation.y,
+          msgPose->pose.pose.orientation.z
+  );
+  Eigen::Transform<double,3,0> Twc(Qw_imu.toRotationMatrix()*Qimu_c.toRotationMatrix());
+  Twc.pretranslate(tw_imu + Qw_imu.toRotationMatrix()*timu_c);
+
+  return Twc;
+};
+
 Eigen::Matrix<double,3,1> Converter::toVector3d(const cv::Mat &cvVector)
 {
     Eigen::Matrix<double,3,1> v;
-    v << cvVector.at<double>(0), cvVector.at<double>(1), cvVector.at<double>(2);
+    v << cvVector.at<float>(0), cvVector.at<float>(1), cvVector.at<float>(2);
 
     return v;
 }
@@ -128,7 +162,7 @@ Eigen::Matrix<double,3,1> Converter::toVector3d(const cv::Mat &cvVector)
 Eigen::Matrix<double,4,1> Converter::toVector4d(const cv::Mat &cvVector)
 {
     Eigen::Matrix<double,4,1> v;
-    v << cvVector.at<double>(0), cvVector.at<double>(1), cvVector.at<double>(2), cvVector.at<double>(3);
+    v << cvVector.at<float>(0), cvVector.at<float>(1), cvVector.at<float>(2), cvVector.at<float>(3);
      return v;
 }
 

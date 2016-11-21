@@ -311,39 +311,21 @@ bool System::CheckTrackerInitialization()
         return 0;
 }
 
-void System::SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry, const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
+void System::SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry,
+                                   const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
 {
-  Eigen::Vector3d tw_imu(
-          msgOdometry->pose.pose.position.x,
-          msgOdometry->pose.pose.position.y,
-          msgOdometry->pose.pose.position.z
-  );
-
-  Eigen::Quaterniond Qw_imu(
-          -msgOdometry->pose.pose.orientation.w,
-          msgOdometry->pose.pose.orientation.x,
-          msgOdometry->pose.pose.orientation.y,
-          msgOdometry->pose.pose.orientation.z
-  );
-
-  Eigen::Vector3d timu_c(
-          msgPose->pose.pose.position.x,
-          msgPose->pose.pose.position.y,
-          msgPose->pose.pose.position.z
-  );
-
-  Eigen::Quaterniond Qimu_c(
-          msgPose->pose.pose.orientation.w,
-          msgPose->pose.pose.orientation.x,
-          msgPose->pose.pose.orientation.y,
-          msgPose->pose.pose.orientation.z
-  );
-
-  Eigen::Transform<double,3,0> Twc(Qw_imu.toRotationMatrix()*Qimu_c.toRotationMatrix());
-  Twc.pretranslate(tw_imu + Qw_imu.toRotationMatrix()*timu_c);
+  Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
 
   //Eigen::Transform Tcw = Twc.inverse();
   mpTracker->mInitialPosition = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
+}
+
+void System::SetMotionModel(const nav_msgs::OdometryConstPtr& msgOdometry,
+                            const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
+{
+  Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
+
+  mpTracker->mExternalPoseMeas = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
 }
 
 

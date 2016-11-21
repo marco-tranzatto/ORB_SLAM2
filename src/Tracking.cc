@@ -146,6 +146,8 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
             mDepthMapFactor = 1.0f/mDepthMapFactor;
     }
 
+    mExternalPoseMeas = cv::Mat::eye(4,4,CV_32F);
+
     mInitialPosition = cv::Mat::eye(4,4,CV_32F);
     mInitialPosition.at<float>(3,3) = -1.0;
 }
@@ -309,16 +311,15 @@ void Tracking::Track()
                 if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
                     bOK = TrackReferenceKeyFrame();
-                  cout << "velocity empty, Tracking reference keyframe" << bOK << endl;
                 }
                 else
                 {
                     bOK = TrackWithMotionModel();
-                  cout << "motion model ok" << bOK << endl;
+                  cout << "Motion model tracking attempted: " << bOK << endl;
                     if(!bOK)
                     {
                         bOK = TrackReferenceKeyFrame();
-                      cout << "motion model not ok, Tracking reference keyframe" << bOK << endl;
+                      cout << "Reference key frame tracking attempted: " << bOK << endl;
                     }
                 }
             }
@@ -431,18 +432,14 @@ void Tracking::Track()
             // Update motion model
             if(!mLastFrame.mTcw.empty())
             {
-              cv::Mat LastTwc = cv::Mat::eye(4,4,CV_32F);
-              mLastFrame.GetRotationInverse().copyTo(LastTwc.rowRange(0,3).colRange(0,3));
-              mLastFrame.GetCameraCenter().copyTo(LastTwc.rowRange(0,3).col(3));
-              mVelocity = mCurrentFrame.mTcw*LastTwc;
+              UpdateMotionModel();
+              cout << "Updated motion model, current mVelocity: " << endl << mVelocity << endl;
             }
             else
                 mVelocity = cv::Mat();
 
 
-          cout << "velocity model:" << mVelocity << endl;
             mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
-          cout << "current camera pose set to " << mCurrentFrame.mTcw << endl;
 
             // Clean VO matches
             for(int i=0; i<mCurrentFrame.N; i++)
@@ -465,10 +462,9 @@ void Tracking::Track()
             mlpTemporalPoints.clear();
 
             // Check if we need to insert a new keyframe
-            if(NeedNewKeyFrame()) {
+            if(NeedNewKeyFrame())
               CreateNewKeyFrame();
-              cout << "inserting a new keyframe" << endl;
-            }
+
 
             // We allow points with high innovation (considererd outliers by the Huber Function)
             // pass to the new keyframe, so that bundle adjustment will finally decide
@@ -1242,6 +1238,13 @@ void Tracking::UpdateLocalPoints()
     }
 }
 
+void Tracking::UpdateMotionModel()
+{
+  cv::Mat LastTwc = cv::Mat::eye(4,4,CV_32F);
+  mLastFrame.GetRotationInverse().copyTo(LastTwc.rowRange(0,3).colRange(0,3));
+  mLastFrame.GetCameraCenter().copyTo(LastTwc.rowRange(0,3).col(3));
+  mVelocity = mExternalPoseMeas*LastTwc;
+}
 
 void Tracking::UpdateLocalKeyFrames()
 {
