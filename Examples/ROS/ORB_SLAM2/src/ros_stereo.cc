@@ -185,6 +185,7 @@ void ImageGrabber::PoseCallback(const nav_msgs::OdometryConstPtr& msgOdometry, c
 {
     if(mpSLAM->CheckTrackerInitialization())
     {
+
       mpSLAM->SetMotionModel(msgOdometry, msgPose);
     }
     else

@@ -54,6 +54,9 @@ public:
     static Eigen::Transform<double,3,0> toEigenTf(const nav_msgs::OdometryConstPtr& msgOdometry,
                                                   const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
 
+    static Eigen::Transform<double,3,0> toEigenTf(const cv::Mat &cvMat3);
+
+
     static Eigen::Matrix<double,3,1> toVector3d(const cv::Mat &cvVector);
     static Eigen::Matrix<double,3,1> toVector3d(const cv::Point3f &cvPoint);
     static Eigen::Matrix<double,4,1> toVector4d(const cv::Mat &cvVector);

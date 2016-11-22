@@ -147,6 +147,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     }
 
     mExternalPoseMeas = cv::Mat::eye(4,4,CV_32F);
+    mLastExternalPoseMeas = cv::Mat::eye(4,4,CV_32F);
 
     mInitialPosition = cv::Mat::eye(4,4,CV_32F);
     mInitialPosition.at<float>(3,3) = -1.0;
@@ -906,7 +907,7 @@ bool Tracking::TrackWithMotionModel()
         return false;
 
     // Optimize frame pose with all matches
-    Optimizer::PoseOptimization(&mCurrentFrame);
+    //Optimizer::PoseOptimization(&mCurrentFrame);
 
     // Discard outliers
     int nmatchesMap = 0;
@@ -1240,9 +1241,9 @@ void Tracking::UpdateLocalPoints()
 
 void Tracking::UpdateMotionModel()
 {
-  cv::Mat LastTwc = cv::Mat::eye(4,4,CV_32F);
-  mLastFrame.GetRotationInverse().copyTo(LastTwc.rowRange(0,3).colRange(0,3));
-  mLastFrame.GetCameraCenter().copyTo(LastTwc.rowRange(0,3).col(3));
+  cv::Mat LastTwc = Converter::toCvMat(
+          Converter::toEigenTf(mLastExternalPoseMeas).inverse(Eigen::TransformTraits::Isometry)
+  );
   mVelocity = mExternalPoseMeas*LastTwc;
 }
 

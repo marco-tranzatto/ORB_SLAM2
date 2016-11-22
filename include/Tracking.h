@@ -106,6 +106,7 @@ public:
     // Buffers for initialization and motion estimation via external odometry
     cv::Mat mInitialPosition;
     cv::Mat mExternalPoseMeas;
+    cv::Mat mLastExternalPoseMeas;
 
     // Lists used to recover the full camera trajectory at the end of the execution.
     // Basically we store the reference keyframe for each frame and its relative transformation

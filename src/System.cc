@@ -323,8 +323,9 @@ void System::SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry
 void System::SetMotionModel(const nav_msgs::OdometryConstPtr& msgOdometry,
                             const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
 {
+  unique_lock<mutex> lock(mMutexMode);
   Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
-
+  mpTracker->mLastExternalPoseMeas = mpTracker->mExternalPoseMeas;
   mpTracker->mExternalPoseMeas = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
 }
 
