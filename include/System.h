@@ -39,7 +39,7 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <nav_msgs/Odometry.h>
-#include "ros/ros.h"
+#include <ros/ros.h>
 
 namespace ORB_SLAM2
 {

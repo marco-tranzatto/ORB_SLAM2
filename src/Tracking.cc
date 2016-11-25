@@ -146,11 +146,14 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
             mDepthMapFactor = 1.0f/mDepthMapFactor;
     }
 
-    mExternalPoseMeas = cv::Mat::eye(4,4,CV_32F);
-    mLastExternalPoseMeas = cv::Mat::eye(4,4,CV_32F);
-
+    // Load Tracking Parameters
     mInitialPosition = cv::Mat::eye(4,4,CV_32F);
-    mInitialPosition.at<float>(3,3) = -1.0;
+    mbExtInit = fSettings["Tracking.InitialPosition"];
+    if(mbExtInit)
+    {
+        mInitialPosition.at<float>(3,3) = -1.0;
+    }
+    mbExtOdo = fSettings["Tracking.MotionModelSource"];
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -316,11 +319,10 @@ void Tracking::Track()
                 else
                 {
                     bOK = TrackWithMotionModel();
-                  cout << "Motion model tracking attempted: " << bOK << endl;
                     if(!bOK)
                     {
                         bOK = TrackReferenceKeyFrame();
-                      cout << "Reference key frame tracking attempted: " << bOK << endl;
+                      cout << "Motion model tracking failed, Reference key frame tracking attempted: " << bOK << endl;
                     }
                 }
             }
@@ -431,14 +433,7 @@ void Tracking::Track()
         if(bOK)
         {
             // Update motion model
-            if(!mLastFrame.mTcw.empty())
-            {
-              UpdateMotionModel();
-              cout << "Updated motion model, current mVelocity: " << endl << mVelocity << endl;
-            }
-            else
-                mVelocity = cv::Mat();
-
+            UpdateMotionModel();
 
             mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
@@ -514,8 +509,6 @@ void Tracking::Track()
     }
 
 }
-
-
 
 void Tracking::StereoInitialization()
 {
@@ -907,7 +900,7 @@ bool Tracking::TrackWithMotionModel()
         return false;
 
     // Optimize frame pose with all matches
-    //Optimizer::PoseOptimization(&mCurrentFrame);
+    Optimizer::PoseOptimization(&mCurrentFrame);
 
     // Discard outliers
     int nmatchesMap = 0;
@@ -1241,10 +1234,29 @@ void Tracking::UpdateLocalPoints()
 
 void Tracking::UpdateMotionModel()
 {
-  cv::Mat LastTwc = Converter::toCvMat(
-          Converter::toEigenTf(mLastExternalPoseMeas).inverse(Eigen::TransformTraits::Isometry)
-  );
-  mVelocity = mExternalPoseMeas*LastTwc;
+  if(mbExtOdo)
+  {
+      if(!mLastExternalPoseMeas.empty())
+      {
+          cv::Mat LastTwc = Converter::toCvMat(
+                  Converter::toEigenTf(mLastExternalPoseMeas).inverse(Eigen::TransformTraits::Isometry));
+          mVelocity = mExternalPoseMeas*LastTwc;
+      }
+
+  }
+  else
+  {
+      if(!mLastFrame.mTcw.empty())
+      {
+          cv::Mat LastTwc = cv::Mat::eye(4,4,CV_32F);
+          mLastFrame.GetRotationInverse().copyTo(LastTwc.rowRange(0,3).colRange(0,3));
+          mLastFrame.GetCameraCenter().copyTo(LastTwc.rowRange(0,3).col(3));
+          mVelocity = mCurrentFrame.mTcw*LastTwc;
+      } else
+      {
+          mVelocity = cv::Mat();
+      }
+  }
 }
 
 void Tracking::UpdateLocalKeyFrames()

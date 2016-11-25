@@ -25,13 +25,13 @@
 #include<chrono>
 
 #include<ros/ros.h>
-#include <cv_bridge/cv_bridge.h>
-#include <message_filters/subscriber.h>
-#include <message_filters/time_synchronizer.h>
-#include <message_filters/sync_policies/approximate_time.h>
+#include<cv_bridge/cv_bridge.h>
+#include<message_filters/subscriber.h>
+#include<message_filters/time_synchronizer.h>
+#include<message_filters/sync_policies/approximate_time.h>
 
-#include <nav_msgs/Odometry.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include<nav_msgs/Odometry.h>
+#include<geometry_msgs/PoseWithCovarianceStamped.h>
 
 #include<opencv2/core/core.hpp>
 
@@ -44,7 +44,10 @@ class ImageGrabber
 public:
     ImageGrabber(ORB_SLAM2::System* pSLAM):mpSLAM(pSLAM){}
 
-    void GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight);
+    void GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,
+                    const sensor_msgs::ImageConstPtr& msgRight,
+                    const nav_msgs::OdometryConstPtr& msgOdometry,
+                    const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
     void PoseCallback(const nav_msgs::OdometryConstPtr& msgOdometry, const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
 
     ORB_SLAM2::System* mpSLAM;
@@ -115,19 +118,15 @@ int main(int argc, char **argv)
 
     message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/cam0/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/cam1/image_raw", 1);
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol;
-    message_filters::Synchronizer<sync_pol> sync(sync_pol(10), left_sub,right_sub);
-    sync.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2));
+    message_filters::Subscriber<nav_msgs::Odometry> odometry_sub(nh, "/rovio/odometry", 1);
+    message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped> extrinsics_sub(nh, "/rovio/extrinsics0", 1);
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image,
+            nav_msgs::Odometry, geometry_msgs::PoseWithCovarianceStamped> sync_pol;
+    message_filters::Synchronizer<sync_pol> sync(sync_pol(10), left_sub, right_sub, odometry_sub, extrinsics_sub);
+    sync.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2,_3,_4));
 
     ros::Publisher pubHandle = nh.advertise<nav_msgs::Odometry>("orb_slam2/odometry", 1);
     SLAM.SetPublisherHandle(pubHandle);
-
-    //ros::Subscriber subHandle = nh.subscribe("/rovio/odometry", 1, &ImageGrabber::OdometryCallback, &igb);
-    message_filters::Subscriber<nav_msgs::Odometry> odometry_sub(nh, "/rovio/odometry", 1);
-    message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped> extrinsics_sub(nh, "/rovio/extrinsics0", 1);
-    typedef message_filters::sync_policies::ApproximateTime<nav_msgs::Odometry, geometry_msgs::PoseWithCovarianceStamped> sync_pol_odo;
-    message_filters::Synchronizer<sync_pol_odo> sync_odo(sync_pol_odo(10), odometry_sub, extrinsics_sub);
-    sync_odo.registerCallback(boost::bind(&ImageGrabber::PoseCallback,&igb,_1,_2));
 
     cout << "start spinning" << endl;
 
@@ -146,9 +145,13 @@ int main(int argc, char **argv)
     return 0;
 }
 
-void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight)
+void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,
+                              const sensor_msgs::ImageConstPtr& msgRight,
+                              const nav_msgs::OdometryConstPtr& msgOdometry,
+                              const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
 {
-	if(mpSLAM->CheckTrackerInitialization()) {
+    PoseCallback(msgOdometry, msgPose);
+    if(mpSLAM->CheckTrackerInitialization()) {
         // Copy the ros image message to cv::Mat.
         cv_bridge::CvImageConstPtr cv_ptrLeft;
         try {
@@ -176,8 +179,7 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
         } else {
             mpSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, cv_ptrLeft->header.stamp.toSec());
         }
-    }
-
+  }
 }
 
 
@@ -185,12 +187,11 @@ void ImageGrabber::PoseCallback(const nav_msgs::OdometryConstPtr& msgOdometry, c
 {
     if(mpSLAM->CheckTrackerInitialization())
     {
-
-      mpSLAM->SetMotionModel(msgOdometry, msgPose);
+        mpSLAM->SetMotionModel(msgOdometry, msgPose);
     }
     else
     {
-      mpSLAM->SetTrackerInitialPose(msgOdometry, msgPose);
+        mpSLAM->SetTrackerInitialPose(msgOdometry, msgPose);
     }
 }
 

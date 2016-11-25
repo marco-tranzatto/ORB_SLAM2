@@ -311,22 +311,28 @@ bool System::CheckTrackerInitialization()
         return 0;
 }
 
+// Set the initial position using external pose measurements, initial frame at camera frame of external system
 void System::SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry,
                                    const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
 {
-  Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
-
-  //Eigen::Transform Tcw = Twc.inverse();
-  mpTracker->mInitialPosition = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
+  if(mpTracker->mbExtInit)
+  {
+      Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
+      //Eigen::Transform Tcw = Twc.inverse();
+      mpTracker->mInitialPosition = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
+  }
 }
 
+// Feed motion model using external odometry
 void System::SetMotionModel(const nav_msgs::OdometryConstPtr& msgOdometry,
                             const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
 {
-  unique_lock<mutex> lock(mMutexMode);
-  Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
-  mpTracker->mLastExternalPoseMeas = mpTracker->mExternalPoseMeas;
-  mpTracker->mExternalPoseMeas = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
+    if(mpTracker->mbExtOdo)
+    {
+        Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
+        mpTracker->mLastExternalPoseMeas = mpTracker->mExternalPoseMeas;
+        mpTracker->mExternalPoseMeas = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
+    }
 }
 
 

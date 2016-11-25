@@ -103,6 +103,12 @@ public:
     std::vector<cv::Point3f> mvIniP3D;
     Frame mInitialFrame;
 
+    // True if external pose measurement should be use for intial frame position and orientation
+    int mbExtInit;
+
+    // True if external odometry should be used for pose prediction
+    int mbExtOdo;
+
     // Buffers for initialization and motion estimation via external odometry
     cv::Mat mInitialPosition;
     cv::Mat mExternalPoseMeas;
