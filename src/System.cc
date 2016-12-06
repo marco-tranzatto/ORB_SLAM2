@@ -267,9 +267,11 @@ void System::PublishOdometry()
 		cv::Mat twc = -(Rwc*Tcw.rowRange(0,3).col(3));
 	    vector<float> q = Converter::toQuaternion(Rwc);
 
-		// odometryMsg.header.seq = msgSeq_;
-		// odometryMsg.header.seq = 1;
-		//odometryMsg.header.stamp = ros::Time::now();
+
+
+		//odometryMsg.header.seq = msgSeq_;
+		odometryMsg.header.seq = 1;
+		odometryMsg.header.stamp = ros::Time::now();
 		odometryMsg.pose.pose.position.x = twc.at<float>(0);
 		odometryMsg.pose.pose.position.y = twc.at<float>(1);
 		odometryMsg.pose.pose.position.z = twc.at<float>(2);
@@ -305,10 +307,7 @@ void System::PublishOdometry()
 // Check whether the tracker initial pose was initialized
 bool System::CheckTrackerInitialization()
 {
-    if(mpTracker->mInitialPosition.at<float>(3,3) > 0)
-        return 1;
-    else
-        return 0;
+    return mpTracker->mInitialPosition.at<float>(3,3) > 0;
 }
 
 // Set the initial position using external pose measurements, initial frame at camera frame of external system
@@ -320,6 +319,8 @@ void System::SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry
       Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
       //Eigen::Transform Tcw = Twc.inverse();
       mpTracker->mInitialPosition = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
+      mpTracker->mExternalPoseMeas = mpTracker->mInitialPosition;
+      mpTracker->mLastExternalPoseMeas = mpTracker->mExternalPoseMeas;
   }
 }
 
@@ -330,6 +331,7 @@ void System::SetMotionModel(const nav_msgs::OdometryConstPtr& msgOdometry,
     if(mpTracker->mbExtOdo)
     {
         Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
+
         mpTracker->mLastExternalPoseMeas = mpTracker->mExternalPoseMeas;
         mpTracker->mExternalPoseMeas = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
     }
@@ -380,6 +382,8 @@ void System::SaveTrajectoryTUM(const string &filename)
     // Transform all keyframes so that the first keyframe is at the origin.
     // After a loop closure the first keyframe might not be at the origin.
     cv::Mat Two = vpKFs[0]->GetPoseInverse();
+
+    cout << "origin was found at " << Two << endl;
 
     ofstream f;
     f.open(filename.c_str());

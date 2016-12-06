@@ -173,8 +173,13 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,
 
         if (do_rectify) {
             cv::Mat imLeft, imRight;
-            cv::remap(cv_ptrLeft->image, imLeft, M1l, M2l, cv::INTER_LINEAR);
-            cv::remap(cv_ptrRight->image, imRight, M1r, M2r, cv::INTER_LINEAR);
+
+            int ignoredLines = 0;
+            cv::Rect includeMask(0,ignoredLines-1+1,cv_ptrLeft->image.cols,cv_ptrLeft->image.rows-2*ignoredLines);
+
+            cv::remap(cv_ptrLeft->image(includeMask), imLeft, M1l, M2l, cv::INTER_LINEAR);
+            cv::remap(cv_ptrRight->image(includeMask), imRight, M1r, M2r, cv::INTER_LINEAR);
+
             mpSLAM->TrackStereo(imLeft, imRight, cv_ptrLeft->header.stamp.toSec());
         } else {
             mpSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, cv_ptrLeft->header.stamp.toSec());

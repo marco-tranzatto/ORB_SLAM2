@@ -109,6 +109,9 @@ public:
     // True if external odometry should be used for pose prediction
     int mbExtOdo;
 
+    // True if tracking should be reset completely if it is lost soon after initialization
+    int mbResetIfLost;
+
     // Buffers for initialization and motion estimation via external odometry
     cv::Mat mInitialPosition;
     cv::Mat mExternalPoseMeas;

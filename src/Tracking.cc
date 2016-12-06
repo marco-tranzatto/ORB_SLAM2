@@ -84,7 +84,14 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
 
     // Max/Min Frames to insert keyframes and to check relocalisation
     mMinFrames = 0;
-    mMaxFrames = fps;
+    mMaxFrames = fSettings["Tracking.MaxNumberFramesBeforeKF"];
+    if(mMaxFrames < 1)
+    {
+        cout << "invalid Parameter Tracking.MaxNumberFramesBeforeKF specified, seeting to fps: " << fps << endl;
+        mMaxFrames = fps;
+    }
+
+
 
     cout << endl << "Camera Parameters: " << endl;
     cout << "- fx: " << fx << endl;
@@ -154,6 +161,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
         mInitialPosition.at<float>(3,3) = -1.0;
     }
     mbExtOdo = fSettings["Tracking.MotionModelSource"];
+    mbResetIfLost = fSettings["Tracking.ResetIfLost"];
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -315,6 +323,7 @@ void Tracking::Track()
                 if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
                     bOK = TrackReferenceKeyFrame();
+
                 }
                 else
                 {
@@ -324,11 +333,19 @@ void Tracking::Track()
                         bOK = TrackReferenceKeyFrame();
                       cout << "Motion model tracking failed, Reference key frame tracking attempted: " << bOK << endl;
                     }
+                    if(!bOK)
+                    {
+
+                    }
                 }
             }
             else
             {
                 bOK = Relocalization();
+                if(!bOK)
+                {
+
+                }
                 cout << "Relocalizing..." << endl;
             }
         }
@@ -345,7 +362,6 @@ void Tracking::Track()
                 if(!mbVO)
                 {
                     // In last frame we tracked enough MapPoints in the map
-
                     if(!mVelocity.empty())
                     {
                         bOK = TrackWithMotionModel();
@@ -430,6 +446,7 @@ void Tracking::Track()
         mpFrameDrawer->Update(this);
 
         // If tracking were good, check if we insert a keyframe
+        // bOK = 1;
         if(bOK)
         {
             // Update motion model
@@ -474,11 +491,11 @@ void Tracking::Track()
         }
 
         // Reset if the camera get lost soon after initialization
-        if(mState==LOST)
+        if(mState==LOST && mbResetIfLost)
         {
             if(mpMap->KeyFramesInMap()<=5)
             {
-                cout << "Track lost soon after initialisation, reseting..." << endl;
+                cout << "Track lost soon after initialisation, resetting..." << endl;
                 mpSystem->Reset();
                 return;
             }
@@ -878,6 +895,7 @@ bool Tracking::TrackWithMotionModel()
     UpdateLastFrame();
 
     mCurrentFrame.SetPose(mVelocity*mLastFrame.mTcw);
+    //mCurrentFrame.SetPose(mExternalPoseMeas);
 
     fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
 
@@ -977,7 +995,6 @@ bool Tracking::TrackLocalMap()
     else
         return true;
 }
-
 
 bool Tracking::NeedNewKeyFrame()
 {
@@ -1254,6 +1271,7 @@ void Tracking::UpdateMotionModel()
           mVelocity = mCurrentFrame.mTcw*LastTwc;
       } else
       {
+          cout << "Motion model update failed, setting to identity.." << endl;
           mVelocity = cv::Mat();
       }
   }
@@ -1529,7 +1547,6 @@ bool Tracking::Relocalization()
         mnLastRelocFrameId = mCurrentFrame.mnId;
         return true;
     }
-
 }
 
 void Tracking::Reset()

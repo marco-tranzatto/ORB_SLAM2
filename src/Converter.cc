@@ -135,7 +135,7 @@ Eigen::Transform<double,3,0> Converter::toEigenTf(const nav_msgs::OdometryConstP
 
   Eigen::Vector3d timu_c(
           msgPose->pose.pose.position.x,
-          0*msgPose->pose.pose.position.y,  //get center of cameras by ignoring lateral intrinsics offset
+          msgPose->pose.pose.position.y,
           msgPose->pose.pose.position.z
   );
 
@@ -145,9 +145,9 @@ Eigen::Transform<double,3,0> Converter::toEigenTf(const nav_msgs::OdometryConstP
           msgPose->pose.pose.orientation.y,
           msgPose->pose.pose.orientation.z
   );
-  Eigen::Transform<double,3,0> Twc(Qw_imu.toRotationMatrix()*Qimu_c.toRotationMatrix());
-  Twc.pretranslate(tw_imu + Qw_imu.toRotationMatrix()*timu_c);
 
+    Eigen::Transform<double,3,0> Twc(Qw_imu.toRotationMatrix()*Qimu_c.toRotationMatrix());
+  Twc.pretranslate(tw_imu + Qw_imu.toRotationMatrix()*timu_c);
   return Twc;
 }
 
