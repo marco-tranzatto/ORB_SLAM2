@@ -525,6 +525,8 @@ void Tracking::Track()
         mlbLost.push_back(mState==LOST);
     }
 
+    mpSystem->PublishTransform(ros::Time::now(), mCurrentFrame.mTcw, "world_frame", "camera_frame");
+    mpSystem->PublishOdometry();
 }
 
 void Tracking::StereoInitialization()
@@ -579,6 +581,9 @@ void Tracking::StereoInitialization()
         mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
         mState=OK;
+
+        mpSystem->PublishTransform(ros::Time::now(), mCurrentFrame.mTcw, "world_reference_frame", "world_frame");
+        mpSystem->PublishOdometry();
     }
 }
 

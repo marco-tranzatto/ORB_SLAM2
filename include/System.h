@@ -41,6 +41,8 @@
 #include <nav_msgs/Odometry.h>
 #include <ros/ros.h>
 
+#include <tf/transform_broadcaster.h>
+
 namespace ORB_SLAM2
 {
 
@@ -60,6 +62,7 @@ public:
         STEREO=1,
         RGBD=2
     };
+
 
 public:
 
@@ -116,6 +119,9 @@ public:
 
     // Publishes current odometry state to rostopic orb_slam2/odometry
     void PublishOdometry();
+
+    // Publishes transforms to tf tree
+    void PublishTransform(ros::Time t, cv::Mat T21, std::string frame1, std::string frame2);
 
     // Check whether the tracker initial pose was initialized
     bool CheckTrackerInitialization();
@@ -182,6 +188,8 @@ private:
 
     // Handle for ROS message publishing
     ros::Publisher publisherHandle;
+    tf::TransformBroadcaster tfBroadcaster;
+
 };
 
 }// namespace ORB_SLAM

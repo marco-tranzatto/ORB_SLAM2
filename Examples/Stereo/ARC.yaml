@@ -85,7 +85,7 @@ RIGHT.P:  !!opencv-matrix
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
-ORBextractor.nFeatures: 800 # 1200
+ORBextractor.nFeatures: 1200 # 1200
 
 # ORB Extractor: Scale factor between levels in the scale pyramid 	
 ORBextractor.scaleFactor: 1.2
@@ -103,16 +103,16 @@ ORBextractor.minThFAST: 5 # 5
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------
-Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameSize: 0.7 #0.05
 Viewer.KeyFrameLineWidth: 1
 Viewer.GraphLineWidth: 0.9
 Viewer.PointSize:2
-Viewer.CameraSize: 0.08
+Viewer.CameraSize: 0.7 #0.08
 Viewer.CameraLineWidth: 3
 Viewer.ViewpointX: 0
-Viewer.ViewpointY: -0.7
-Viewer.ViewpointZ: -1.8
-Viewer.ViewpointF: 500
+Viewer.ViewpointY: -12 #-0.7
+Viewer.ViewpointZ: -8 #-1.8
+Viewer.ViewpointF: 500 #500
 
 
 #--------------------------------------------------------------------------------------------
@@ -127,12 +127,13 @@ Tracking.InitialPosition: 1
 # Choose motion model to be employed for pose prediction
 # 0 internal: T_cw(k) = mVelocity(k-1,k-2)*mLastPose(k-2) = (T_cw(k-1)*T_wc(k-2))*T_cw(k-1)
 # 1 external: same as above but feed external measurement for estimation mVelocity = T_cw(k-1)*T_wc(k-1)
-Tracking.MotionModelSource: 1
+Tracking.MotionModelSource: 0
 
 # Use pose optimization in each frame starting with the predicted pose (on) or use predicted pose directly (off)
 # Tracking.PoseOptimization: on / off
 
-# Choose whether system should be reset completely if tracking is lost soon after last new map creation
+# Choose whether system should be reset completely if tracking is lost soon after last new map creation (currently not functional)
 Tracking.ResetIfLost: 1
 
-Tracking.MaxNumberFramesBeforeKF: 3
+# Choose max number of frames until keyframe insertion
+Tracking.MaxNumberFramesBeforeKF: 2

@@ -26,6 +26,7 @@
 #include <pangolin/pangolin.h>
 #include <iomanip>
 
+#include<tf/transform_broadcaster.h>
 
 
 
@@ -157,7 +158,6 @@ cv::Mat System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, const
         mbReset = false;
     }
     }
-    PublishOdometry();
     return mpTracker->GrabImageStereo(imLeft,imRight,timestamp);
 }
 
@@ -302,6 +302,27 @@ void System::PublishOdometry()
 
 		publisherHandle.publish(odometryMsg);
 	}
+}
+
+void System::PublishTransform(ros::Time t, cv::Mat T21, std::string frame1, std::string frame2)
+{
+    tf::StampedTransform tfMsg;
+
+    tfMsg.stamp_ = t;
+    tfMsg.frame_id_ = frame1;
+    tfMsg.child_frame_id_ = frame2;
+
+    // R12 = T12(0:2,0:2).transposed()
+    cv::Mat R12 = cv::Mat_<float>(T21.rowRange(0, 3).colRange(0, 3).t());
+    // t12 = (-1)*R12*T21(0:2,3)
+    cv::Mat t12 = R12*T21.rowRange(0, 3).col(3)*(-1);
+
+    vector<float> q12 = Converter::toQuaternion(R12);
+
+    tfMsg.setOrigin(tf::Vector3(t12.at<float>(0), t12.at<float>(1), t12.at<float>(2)));
+    tfMsg.setRotation(tf::Quaternion(q12[1], q12[2], q12[3], q12[0]));
+
+    tfBroadcaster.sendTransform(tfMsg);
 }
 
 // Check whether the tracker initial pose was initialized
