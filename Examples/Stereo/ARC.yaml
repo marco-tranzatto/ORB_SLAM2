@@ -127,7 +127,7 @@ Tracking.InitialPosition: 1
 # Choose motion model to be employed for pose prediction
 # 0 internal: T_cw(k) = mVelocity(k-1,k-2)*mLastPose(k-2) = (T_cw(k-1)*T_wc(k-2))*T_cw(k-1)
 # 1 external: same as above but feed external measurement for estimation mVelocity = T_cw(k-1)*T_wc(k-1)
-Tracking.MotionModelSource: 0
+Tracking.MotionModelSource: 1
 
 # Use pose optimization in each frame starting with the predicted pose (on) or use predicted pose directly (off)
 # Tracking.PoseOptimization: on / off

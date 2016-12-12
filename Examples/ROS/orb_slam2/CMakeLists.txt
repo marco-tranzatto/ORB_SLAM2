@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   message_filters
   cv_bridge
+  tf
 )
 
 find_package(OpenCV  REQUIRED)
@@ -33,6 +34,7 @@ set(orb_slam2_LIBRARIES
   ${ORB_SLAM2_SOURCE_DIR}/lib/libORB_SLAM2.so
   ${ORB_SLAM2_SOURCE_DIR}/Thirdparty/g2o/lib/libg2o.so
   ${ORB_SLAM2_SOURCE_DIR}/Thirdparty/DBoW2/lib/libDBoW2.so
+  ${catkin_LIBRARIES}
 )
 
 add_library(libORB_SLAM2 SHARED IMPORTED)
