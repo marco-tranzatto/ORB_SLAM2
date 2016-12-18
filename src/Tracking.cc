@@ -87,7 +87,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     mMaxFrames = fSettings["Tracking.MaxNumberFramesBeforeKF"];
     if(mMaxFrames < 1)
     {
-        cout << "invalid Parameter Tracking.MaxNumberFramesBeforeKF specified, seeting to fps: " << fps << endl;
+        cout << "invalid Parameter Tracking.MaxNumberFramesBeforeKF specified, setting to fps: " << fps << endl;
         mMaxFrames = fps;
     }
 
@@ -179,6 +179,13 @@ void Tracking::SetViewer(Viewer *pViewer)
     mpViewer=pViewer;
 }
 
+cv::Mat Tracking::GetVelocity() {
+    return mVelocity;
+}
+
+Frame Tracking::GetLastFrame() {
+    return mLastFrame;
+}
 
 cv::Mat Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat &imRectRight, const double &timestamp)
 {
@@ -323,11 +330,13 @@ void Tracking::Track()
                 if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
                     bOK = TrackReferenceKeyFrame();
+                    cout << "Tracking keyframe only" << endl;
 
                 }
                 else
                 {
                     bOK = TrackWithMotionModel();
+                    cout << "Motion model tracking attempted: " << bOK << endl;
                     if(!bOK)
                     {
                         bOK = TrackReferenceKeyFrame();
@@ -427,6 +436,7 @@ void Tracking::Track()
         {
             if(bOK)
                 bOK = TrackLocalMap();
+            cout << "Local map tracking attempted: " << bOK << endl;
         }
         else
         {
@@ -525,7 +535,8 @@ void Tracking::Track()
         mlbLost.push_back(mState==LOST);
     }
 
-    mpSystem->PublishTransform(ros::Time::now(), mCurrentFrame.mTcw, "world_frame", "camera_frame");
+    mpSystem->PublishInertialTransform(ros::Time(mCurrentFrame.mTimeStamp), "ORB_map", "world", "ORB_initial");
+    mpSystem->PublishPoseTransform(ros::Time(mCurrentFrame.mTimeStamp), mCurrentFrame.mTcw, "world", "ORB_odometry");
     mpSystem->PublishOdometry();
 }
 
@@ -582,7 +593,8 @@ void Tracking::StereoInitialization()
 
         mState=OK;
 
-        mpSystem->PublishTransform(ros::Time::now(), mCurrentFrame.mTcw, "world_reference_frame", "world_frame");
+        mpSystem->PublishPoseTransform(ros::Time(mCurrentFrame.mTimeStamp), mCurrentFrame.mTcw, "world",
+                                       "ORB_odometry");
         mpSystem->PublishOdometry();
     }
 }
@@ -952,7 +964,7 @@ bool Tracking::TrackWithMotionModel()
         return nmatches>20;
     }
 
-    return nmatchesMap>=10;
+    return nmatchesMap>=0;
 }
 
 bool Tracking::TrackLocalMap()
@@ -995,7 +1007,7 @@ bool Tracking::TrackLocalMap()
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50)
         return false;
 
-    if(mnMatchesInliers<30)
+    if(mnMatchesInliers<5) // was 30
         return false;
     else
         return true;
@@ -1260,9 +1272,9 @@ void Tracking::UpdateMotionModel()
   {
       if(!mLastExternalPoseMeas.empty())
       {
-          cv::Mat LastTwc = Converter::toCvMat(
-                  Converter::toEigenTf(mLastExternalPoseMeas).inverse(Eigen::TransformTraits::Isometry));
-          mVelocity = mExternalPoseMeas*LastTwc;
+          mVelocity = mExternalPoseMeas*Converter::toCvMat(
+                  Converter::toEigenTf(mLastExternalPoseMeas).inverse(Eigen::TransformTraits::Isometry)
+          );
       }
 
   }
@@ -1276,8 +1288,9 @@ void Tracking::UpdateMotionModel()
           mVelocity = mCurrentFrame.mTcw*LastTwc;
       } else
       {
-          cout << "Motion model update failed, setting to identity.." << endl;
           mVelocity = cv::Mat();
+          cout << "Motion model update failed, aborting motionmodelupdate.." << endl;
+          return;
       }
   }
 }

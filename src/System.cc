@@ -258,20 +258,26 @@ void System::SetPublisherHandle(const ros::Publisher pubHandle)
 
 void System::PublishOdometry()
 {
-	if(!((mpTracker->mCurrentFrame).mTcw.empty()))
+	if(!((mpTracker->mCurrentFrame).mTcw.empty()) & !(mpTracker->GetVelocity().empty()))
 	{
-    nav_msgs::Odometry odometryMsg;
+        double dt = mpTracker->mCurrentFrame.mTimeStamp - mpTracker->GetLastFrame().mTimeStamp;
+        dt = 0.05;
+
+        nav_msgs::Odometry odometryMsg;
 
 		cv::Mat Tcw = (mpTracker->mCurrentFrame).mTcw.clone();
 		cv::MatExpr Rwc = Tcw.rowRange(0,3).colRange(0,3).t();
 		cv::Mat twc = -(Rwc*Tcw.rowRange(0,3).col(3));
 	    vector<float> q = Converter::toQuaternion(Rwc);
 
+        //cv::Mat twistAngularSkew = Tcw.rowRange(0,2).colRange(0,2)*mpTracker->GetVelocity().rowRange(0,2).colRange(0,2).t();
+        cv::Mat twistAngularSkew = cv::Mat::eye(4,4,CV_32F) - mpTracker->GetVelocity();
+        cv::Mat twistLinear = -1.0d*mpTracker->GetVelocity().rowRange(0,3).col(3).clone();
 
-
-		//odometryMsg.header.seq = msgSeq_;
 		odometryMsg.header.seq = 1;
-		odometryMsg.header.stamp = ros::Time::now();
+		odometryMsg.header.stamp = ros::Time(mpTracker->mCurrentFrame.mTimeStamp);
+        odometryMsg.header.frame_id = "world";
+        odometryMsg.child_frame_id = "ORB_odometry";
 		odometryMsg.pose.pose.position.x = twc.at<float>(0);
 		odometryMsg.pose.pose.position.y = twc.at<float>(1);
 		odometryMsg.pose.pose.position.z = twc.at<float>(2);
@@ -283,28 +289,27 @@ void System::PublishOdometry()
 
 		for(unsigned int i=0;i<6;i++){
 		  for(unsigned int j=0;j<6;j++){
-			odometryMsg.pose.covariance[j+6*i] = 0;
+			odometryMsg.pose.covariance[j+6*i] = -1;
 		  }
 		}
 
-		odometryMsg.twist.twist.linear.x = 0;
-		odometryMsg.twist.twist.linear.y = 0;
-		odometryMsg.twist.twist.linear.z = 0;
-		odometryMsg.twist.twist.angular.x = 0;
-		odometryMsg.twist.twist.angular.y = 0;
-		odometryMsg.twist.twist.angular.z = 0;
+		odometryMsg.twist.twist.linear.x = twistLinear.at<float>(0)/dt;
+		odometryMsg.twist.twist.linear.y = twistLinear.at<float>(1)/dt;
+		odometryMsg.twist.twist.linear.z = twistLinear.at<float>(2)/dt;
+		odometryMsg.twist.twist.angular.x = (twistAngularSkew.at<float>(2,1)-twistAngularSkew.at<float>(1,2))/(2*dt);
+		odometryMsg.twist.twist.angular.y = (twistAngularSkew.at<float>(0,2)-twistAngularSkew.at<float>(2,0))/(2*dt);
+		odometryMsg.twist.twist.angular.z = (twistAngularSkew.at<float>(1,0)-twistAngularSkew.at<float>(0,1))/(2*dt);
 
 		for(unsigned int i=0;i<6;i++){
 		  for(unsigned int j=0;j<6;j++){
-			odometryMsg.twist.covariance[j+6*i] = 0;
+			odometryMsg.twist.covariance[j+6*i] = -1;
 		  }
 		}
-
 		publisherHandle.publish(odometryMsg);
 	}
 }
 
-void System::PublishTransform(ros::Time t, cv::Mat T21, std::string frame1, std::string frame2)
+void System::PublishPoseTransform(ros::Time t, cv::Mat T21, std::string frame1, std::string frame2)
 {
     if(T21.empty())
     {
@@ -326,10 +331,23 @@ void System::PublishTransform(ros::Time t, cv::Mat T21, std::string frame1, std:
     vector<float> q12 = Converter::toQuaternion(R12);
 
     tfMsg.setOrigin(tf::Vector3(t12.at<float>(0), t12.at<float>(1), t12.at<float>(2)));
-    tfMsg.setRotation(tf::Quaternion(q12[1], q12[2], q12[3], q12[0]));
+    tfMsg.setRotation(tf::Quaternion(q12[0], q12[1], q12[2], q12[3]));
 
     tfBroadcaster.sendTransform(tfMsg);
-    cout << "transform publishing successful" << endl;
+}
+
+void System::PublishInertialTransform(ros::Time t, std::string mapFrame, std::string worldFrame, std::string initialFrame)
+{
+    vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+
+    // Transform all keyframes so that the first keyframe is at the origin.
+    // After a loop closure the first keyframe might not be at the origin.
+    cv::Mat Tow = vpKFs[0]->GetPose();
+
+    PublishPoseTransform(t, Tow, worldFrame, mapFrame);
+
+    PublishPoseTransform(t, mpTracker->mInitialPosition, worldFrame, initialFrame);
 }
 
 // Check whether the tracker initial pose was initialized
@@ -342,12 +360,19 @@ bool System::CheckTrackerInitialization()
 void System::SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry,
                                    const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
 {
+  cv::Mat Tcw = Converter::toCvMat(Converter::toEigenTf(msgOdometry, msgPose).inverse(Eigen::TransformTraits::Isometry));
+
   if(mpTracker->mbExtInit)
-  {
-      Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
+      mpTracker->mInitialPosition = Tcw;
+  else
+      mpTracker->mInitialPosition = cv::Mat::eye(4, 4, CV_32F);
+
+      //Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
       //Eigen::Transform Tcw = Twc.inverse();
-      mpTracker->mInitialPosition = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
-      mpTracker->mExternalPoseMeas = mpTracker->mInitialPosition;
+
+  if(mpTracker->mbExtOdo)
+  {
+      mpTracker->mExternalPoseMeas = Tcw;
       mpTracker->mLastExternalPoseMeas = mpTracker->mExternalPoseMeas;
   }
 }

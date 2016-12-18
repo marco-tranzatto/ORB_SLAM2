@@ -27,6 +27,7 @@
 #include<ros/ros.h>
 #include<cv_bridge/cv_bridge.h>
 #include<message_filters/subscriber.h>
+#include<message_filters/connection.h>
 #include<message_filters/time_synchronizer.h>
 #include<message_filters/sync_policies/approximate_time.h>
 
@@ -48,6 +49,10 @@ public:
                     const sensor_msgs::ImageConstPtr& msgRight,
                     const nav_msgs::OdometryConstPtr& msgOdometry,
                     const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
+
+    void GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,
+                    const sensor_msgs::ImageConstPtr& msgRight);
+
     void PoseCallback(const nav_msgs::OdometryConstPtr& msgOdometry, const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
 
     ORB_SLAM2::System* mpSLAM;
@@ -75,16 +80,16 @@ int main(int argc, char **argv)
     stringstream ss(argv[3]);
 	ss >> boolalpha >> igb.do_rectify;
 
-    if(igb.do_rectify)
-    {      
-        // Load settings related to stereo calibration
-        cv::FileStorage fsSettings(argv[2], cv::FileStorage::READ);
-        if(!fsSettings.isOpened())
-        {
-            cerr << "ERROR: Wrong path to settings" << endl;
-            return -1;
-        }
+    // Load settings related to stereo calibration
+    cv::FileStorage fsSettings(argv[2], cv::FileStorage::READ);
+    if(!fsSettings.isOpened())
+    {
+        cerr << "ERROR: Wrong path to settings" << endl;
+        return -1;
+    }
 
+    if(igb.do_rectify)
+    {
         cv::Mat K_l, K_r, P_l, P_r, R_l, R_r, D_l, D_r;
         fsSettings["LEFT.K"] >> K_l;
         fsSettings["RIGHT.K"] >> K_r;
@@ -118,12 +123,30 @@ int main(int argc, char **argv)
 
     message_filters::Subscriber<sensor_msgs::Image> left_sub(nh, "/cam0/image_raw", 1);
     message_filters::Subscriber<sensor_msgs::Image> right_sub(nh, "/cam1/image_raw", 1);
+
+    int useExtOdo = fsSettings["Tracking.MotionModelSource"];
+    int useExtInit = fsSettings["Tracking.InitialPosition"];
+
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image,
+            nav_msgs::Odometry, geometry_msgs::PoseWithCovarianceStamped> sync_pol_odometry;
     message_filters::Subscriber<nav_msgs::Odometry> odometry_sub(nh, "/rovio/odometry", 1);
     message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped> extrinsics_sub(nh, "/rovio/extrinsics0", 1);
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image,
-            nav_msgs::Odometry, geometry_msgs::PoseWithCovarianceStamped> sync_pol;
-    message_filters::Synchronizer<sync_pol> sync(sync_pol(10), left_sub, right_sub, odometry_sub, extrinsics_sub);
-    sync.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2,_3,_4));
+    message_filters::Synchronizer<sync_pol_odometry> sync_odometry(sync_pol_odometry(10), left_sub, right_sub, odometry_sub, extrinsics_sub);
+    sync_odometry.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2,_3,_4));
+
+    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol_img;
+    message_filters::Synchronizer<sync_pol_img> sync_images(sync_pol_img(10), left_sub, right_sub);
+    sync_images.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2));
+
+    if(useExtOdo || useExtInit)
+    {
+        cout << "extended synchronizer initialized " << endl;
+        sync_images.~Synchronizer();
+    } else
+    {
+        cout << "short synchronizer initialized " << endl;
+        sync_odometry.~Synchronizer();
+    }
 
     ros::Publisher pubHandle = nh.advertise<nav_msgs::Odometry>("orb_slam2/odometry", 1);
     SLAM.SetPublisherHandle(pubHandle);
@@ -151,42 +174,54 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,
                               const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
 {
     PoseCallback(msgOdometry, msgPose);
-    if(mpSLAM->CheckTrackerInitialization()) {
-        // Copy the ros image message to cv::Mat.
-        cv_bridge::CvImageConstPtr cv_ptrLeft;
-        try {
-            cv_ptrLeft = cv_bridge::toCvShare(msgLeft);
-        }
-        catch (cv_bridge::Exception &e) {
-            ROS_ERROR("cv_bridge exception: %s", e.what());
-            return;
-        }
-
-        cv_bridge::CvImageConstPtr cv_ptrRight;
-        try {
-            cv_ptrRight = cv_bridge::toCvShare(msgRight);
-        }
-        catch (cv_bridge::Exception &e) {
-            ROS_ERROR("cv_bridge exception: %s", e.what());
-            return;
-        }
-
-        if (do_rectify) {
-            cv::Mat imLeft, imRight;
-
-            int ignoredLines = 0;
-            cv::Rect includeMask(0,ignoredLines-1+1,cv_ptrLeft->image.cols,cv_ptrLeft->image.rows-2*ignoredLines);
-
-            cv::remap(cv_ptrLeft->image(includeMask), imLeft, M1l, M2l, cv::INTER_LINEAR);
-            cv::remap(cv_ptrRight->image(includeMask), imRight, M1r, M2r, cv::INTER_LINEAR);
-
-            mpSLAM->TrackStereo(imLeft, imRight, cv_ptrLeft->header.stamp.toSec());
-        } else {
-            mpSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, cv_ptrLeft->header.stamp.toSec());
-        }
-  }
+    if(mpSLAM->CheckTrackerInitialization())
+        GrabStereo(msgLeft, msgRight);
 }
 
+void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,
+                              const sensor_msgs::ImageConstPtr& msgRight)
+{
+    // Copy the ros image message to cv::Mat.
+    cv_bridge::CvImageConstPtr cv_ptrLeft;
+    try {
+        cv_ptrLeft = cv_bridge::toCvShare(msgLeft);
+    }
+    catch (cv_bridge::Exception &e) {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+
+    cv_bridge::CvImageConstPtr cv_ptrRight;
+    try {
+        cv_ptrRight = cv_bridge::toCvShare(msgRight);
+    }
+    catch (cv_bridge::Exception &e) {
+        ROS_ERROR("cv_bridge exception: %s", e.what());
+        return;
+    }
+
+    if (do_rectify) {
+        cv::Mat imLeft, imRight;
+
+        int ignoredLines = 0;
+
+        if(ignoredLines > 0)
+        {
+            cv::Rect includeMask(0,ignoredLines-1+1,cv_ptrLeft->image.cols,cv_ptrLeft->image.rows-2*ignoredLines);
+            cv::remap(cv_ptrLeft->image(includeMask), imLeft, M1l, M2l, cv::INTER_LINEAR);
+            cv::remap(cv_ptrRight->image(includeMask), imRight, M1r, M2r, cv::INTER_LINEAR);
+        } else {
+            cv::remap(cv_ptrLeft->image, imLeft, M1l, M2l, cv::INTER_LINEAR);
+            cv::remap(cv_ptrRight->image, imRight, M1r, M2r, cv::INTER_LINEAR);
+        }
+
+
+        mpSLAM->TrackStereo(imLeft, imRight, cv_ptrLeft->header.stamp.toSec());
+    } else {
+        mpSLAM->TrackStereo(cv_ptrLeft->image, cv_ptrRight->image, cv_ptrLeft->header.stamp.toSec());
+    }
+
+}
 
 void ImageGrabber::PoseCallback(const nav_msgs::OdometryConstPtr& msgOdometry, const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose)
 {
