@@ -121,7 +121,7 @@ public:
     void PublishOdometry();
 
     // Publishes transforms to tf tree
-    void PublishPoseTransform(ros::Time t, cv::Mat T21, std::string frame1, std::string frame2);
+    void PublishPoseTransform(ros::Time t, const cv::Mat &T21, std::string frame1, std::string frame2);
     void PublishInertialTransform(ros::Time t, std::string mapFrame, std::string worldFrame, std::string initialPose);
 
     // Check whether the tracker initial pose was initialized

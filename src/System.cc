@@ -309,7 +309,7 @@ void System::PublishOdometry()
 	}
 }
 
-void System::PublishPoseTransform(ros::Time t, cv::Mat T21, std::string frame1, std::string frame2)
+void System::PublishPoseTransform(ros::Time t, const cv::Mat &T21, std::string frame1, std::string frame2)
 {
     if(T21.empty())
     {

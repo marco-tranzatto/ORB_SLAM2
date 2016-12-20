@@ -115,6 +115,9 @@ public:
     // True if tracking should be reset completely if it is lost soon after initialization
     int mbResetIfLost;
 
+    // True if tracking should advance using motion model estimate even when tracking is lost
+    int mbDeadReckoning;
+
     // Buffers for initialization and motion estimation via external odometry
     cv::Mat mInitialPosition;
     cv::Mat mExternalPoseMeas;
@@ -150,6 +153,8 @@ protected:
     bool TrackWithMotionModel();
 
     bool Relocalization();
+
+    bool DeadReckoning();
 
     void UpdateLocalMap();
     void UpdateLocalPoints();

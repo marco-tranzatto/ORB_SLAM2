@@ -162,6 +162,7 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
     }
     mbExtOdo = fSettings["Tracking.MotionModelSource"];
     mbResetIfLost = fSettings["Tracking.ResetIfLost"];
+    mbDeadReckoning = fSettings["Tracking.DeadReckoning"];
 }
 
 void Tracking::SetLocalMapper(LocalMapping *pLocalMapper)
@@ -316,6 +317,9 @@ void Tracking::Track()
         // System is initialized. Track Frame.
         bool bOK;
 
+        if(mbExtOdo)// Update motion model if using external motion model, update after tracking if using internal model
+            UpdateMotionModel();
+
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
         if(!mbOnlyTracking)
         {
@@ -325,37 +329,50 @@ void Tracking::Track()
             if(mState==OK)
             {
                 // Local Mapping might have changed some MapPoints tracked in last frame
+                cout << "checking last frame " << endl;
                 CheckReplacedInLastFrame();
+                cout << "finished checking last frame " << endl;
 
                 if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
                 {
                     bOK = TrackReferenceKeyFrame();
-                    cout << "Tracking keyframe only" << endl;
-
+                    cout << "Tracking keyframe only..." << bOK << endl;
+                    if(!bOK && mbDeadReckoning)
+                    {
+                        bOK = DeadReckoning();
+                        //mpFrameDrawer->Update(this);
+                        cout << "DeadReckoning attempted..." << bOK << endl;
+                    }
                 }
                 else
                 {
+                    cout << "starting tracking chain " << endl;
                     bOK = TrackWithMotionModel();
-                    cout << "Motion model tracking attempted: " << bOK << endl;
+                    cout << "Motion model tracking attempted..." << bOK << endl;
                     if(!bOK)
                     {
-                        bOK = TrackReferenceKeyFrame();
-                      cout << "Motion model tracking failed, Reference key frame tracking attempted: " << bOK << endl;
+                        //bOK = TrackReferenceKeyFrame();
+                    cout << "Motion model tracking failed, Reference key frame tracking attempted..." << bOK << endl;
                     }
-                    if(!bOK)
+                    if(!bOK && mbDeadReckoning)
                     {
-
+                        bOK = DeadReckoning();
+                        //mpFrameDrawer->Update(this);
+                        cout << "DeadReckoning attempted..." << bOK << endl;
                     }
                 }
             }
             else
             {
-                bOK = Relocalization();
-                if(!bOK)
+                if(!mbDeadReckoning)
+                    bOK = Relocalization();
+                cout << "Relocalizing..." << bOK << endl;
+                if(!bOK && mbDeadReckoning)
                 {
-
+                    bOK = DeadReckoning();
+                    //mpFrameDrawer->Update(this);
+                    cout << "DeadReckoning attempted" << bOK << endl;
                 }
-                cout << "Relocalizing..." << endl;
             }
         }
         else
@@ -450,7 +467,7 @@ void Tracking::Track()
         if(bOK)
             mState = OK;
         else
-            mState=LOST;
+            mState= OK;
 
         // Update drawer
         mpFrameDrawer->Update(this);
@@ -459,8 +476,8 @@ void Tracking::Track()
         // bOK = 1;
         if(bOK)
         {
-            // Update motion model
-            UpdateMotionModel();
+            if(!mbExtOdo)// Update motion model if using internal, otherwise it was updated before
+                UpdateMotionModel();
 
             mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
@@ -535,7 +552,7 @@ void Tracking::Track()
         mlbLost.push_back(mState==LOST);
     }
 
-    mpSystem->PublishInertialTransform(ros::Time(mCurrentFrame.mTimeStamp), "ORB_map", "world", "ORB_initial");
+    //mpSystem->PublishInertialTransform(ros::Time(mCurrentFrame.mTimeStamp), "ORB_map", "world", "ORB_initial");
     mpSystem->PublishPoseTransform(ros::Time(mCurrentFrame.mTimeStamp), mCurrentFrame.mTcw, "world", "ORB_odometry");
     mpSystem->PublishOdometry();
 }
@@ -792,9 +809,14 @@ void Tracking::CheckReplacedInLastFrame()
     }
 }
 
-
 bool Tracking::TrackReferenceKeyFrame()
 {
+    if(mLastFrame.mTcw.empty())
+    {
+        cout << "ReferenceKeyframeTracking failed, last frame empty!" << endl;
+        return false;
+    }
+
     // Compute Bag of Words vector
     mCurrentFrame.ComputeBoW();
 
@@ -834,7 +856,7 @@ bool Tracking::TrackReferenceKeyFrame()
         }
     }
 
-    return nmatchesMap>=10;
+    return nmatchesMap>=20;
 }
 
 void Tracking::UpdateLastFrame()
@@ -907,12 +929,22 @@ bool Tracking::TrackWithMotionModel()
 {
     ORBmatcher matcher(0.9,true);
 
+    if(mLastFrame.mTcw.empty())
+    {
+        cout << "MotionModelTracking failed, last frame empty" << endl;
+        return false;
+    }
+    if(mVelocity.empty())
+    {
+       cout << "MotionModelTracking failed, mVel empty" << endl;
+       return false;
+    }
+
     // Update last frame pose according to its reference keyframe
     // Create "visual odometry" points if in Localization Mode
     UpdateLastFrame();
 
     mCurrentFrame.SetPose(mVelocity*mLastFrame.mTcw);
-    //mCurrentFrame.SetPose(mExternalPoseMeas);
 
     fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
 
@@ -922,7 +954,9 @@ bool Tracking::TrackWithMotionModel()
         th=15;
     else
         th=7;
+
     int nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,th,mSensor==System::MONOCULAR);
+    cout << nmatches << endl;
 
     // If few matches, uses a wider window search
     if(nmatches<20)
@@ -964,7 +998,7 @@ bool Tracking::TrackWithMotionModel()
         return nmatches>20;
     }
 
-    return nmatchesMap>=0;
+    return nmatchesMap>=10;
 }
 
 bool Tracking::TrackLocalMap()
@@ -1007,7 +1041,7 @@ bool Tracking::TrackLocalMap()
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && mnMatchesInliers<50)
         return false;
 
-    if(mnMatchesInliers<5) // was 30
+    if(mnMatchesInliers<30) // was 30
         return false;
     else
         return true;
@@ -1268,6 +1302,7 @@ void Tracking::UpdateLocalPoints()
 
 void Tracking::UpdateMotionModel()
 {
+    cout << "updating motion model" << endl;
   if(mbExtOdo)
   {
       if(!mLastExternalPoseMeas.empty())
@@ -1293,6 +1328,7 @@ void Tracking::UpdateMotionModel()
           return;
       }
   }
+    cout << "exiting motion model update" << endl;
 }
 
 void Tracking::UpdateLocalKeyFrames()
@@ -1565,6 +1601,70 @@ bool Tracking::Relocalization()
         mnLastRelocFrameId = mCurrentFrame.mnId;
         return true;
     }
+}
+
+bool Tracking::DeadReckoning()
+{
+    cout << "entering dead reckoning" << endl;
+    if(mpLocalMapper->isStopped() || mpLocalMapper->stopRequested() || !mpLocalMapper->SetNotStop(true) || !mpLocalMapper->AcceptKeyFrames())
+        return false;
+
+    // Set Frame pose according to motion model
+    if(mVelocity.empty()) cout << "mVel was empty!" << endl;
+    if(mLastFrame.mTcw.empty())
+    {
+        cout << "mLastFrame.mtcw was empty!" << endl;
+        return false;
+    }
+    mCurrentFrame.SetPose(mVelocity*mLastFrame.mTcw);
+
+    mCurrentFrame.UpdatePoseMatrices();
+
+    // Create KeyFrame
+    KeyFrame* pKFini = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
+
+    // Insert KeyFrame in the map
+    mpMap->AddKeyFrame(pKFini);
+
+    // Create MapPoints and asscoiate to KeyFrame
+    for(int i=0; i<mCurrentFrame.N;i++)
+    {
+        float z = mCurrentFrame.mvDepth[i];
+        if(z>0)
+        {
+            cv::Mat x3D = mCurrentFrame.UnprojectStereo(i);
+            MapPoint* pNewMP = new MapPoint(x3D,pKFini,mpMap);
+            pNewMP->AddObservation(pKFini,i);
+            pKFini->AddMapPoint(pNewMP,i);
+            pNewMP->ComputeDistinctiveDescriptors();
+            pNewMP->UpdateNormalAndDepth();
+            mpMap->AddMapPoint(pNewMP);
+
+            mCurrentFrame.mvpMapPoints[i]=pNewMP;
+        }
+    }
+
+    cout << "New map created with " << mpMap->MapPointsInMap() << " points" << endl;
+
+    mpLocalMapper->InsertKeyFrame(pKFini);
+
+    mLastFrame = Frame(mCurrentFrame);
+    mnLastKeyFrameId=mCurrentFrame.mnId;
+    mpLastKeyFrame = pKFini;
+
+    mvpLocalKeyFrames.push_back(pKFini);
+    //mvpLocalMapPoints=mpMap->GetAllMapPoints();
+    mpReferenceKF = pKFini;
+    mCurrentFrame.mpReferenceKF = pKFini;
+
+    //mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
+
+    mpMap->mvpKeyFrameOrigins.push_back(pKFini);
+
+    mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
+
+    cout << "returning from dead reckoning" << endl;
+    return false;
 }
 
 void Tracking::Reset()
