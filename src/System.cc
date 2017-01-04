@@ -384,7 +384,6 @@ void System::SetMotionModel(const nav_msgs::OdometryConstPtr& msgOdometry,
     if(mpTracker->mbExtOdo)
     {
         Eigen::Transform<double,3,0> Twc = Converter::toEigenTf(msgOdometry, msgPose);
-
         mpTracker->mLastExternalPoseMeas = mpTracker->mExternalPoseMeas;
         mpTracker->mExternalPoseMeas = Converter::toCvMat(Twc.inverse(Eigen::TransformTraits::Isometry));
     }

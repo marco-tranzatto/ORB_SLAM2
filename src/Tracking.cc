@@ -317,7 +317,7 @@ void Tracking::Track()
         // System is initialized. Track Frame.
         bool bOK;
 
-        if(mbExtOdo)// Update motion model if using external motion model, update after tracking if using internal model
+        if(mbExtOdo)// Update motion model here if using external motion model, update after tracking if using internal model
             UpdateMotionModel();
 
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
@@ -325,54 +325,48 @@ void Tracking::Track()
         {
             // Local Mapping is activated. This is the normal behaviour, unless
             // you explicitly activate the "only tracking" mode.
-
-            if(mState==OK)
+            switch(mState)
             {
-                // Local Mapping might have changed some MapPoints tracked in last frame
-                cout << "checking last frame " << endl;
-                CheckReplacedInLastFrame();
-                cout << "finished checking last frame " << endl;
+                case OK:
+                    // Local Mapping might have changed some MapPoints tracked in last frame
+                    CheckReplacedInLastFrame();
+                    if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
+                    {
+                        bOK = TrackReferenceKeyFrame();
+                        cout << "Tracking keyframe only..." << bOK << endl;
+                    }
+                    else
+                    {
+                        cout << "starting tracking chain " << endl;
+                        bOK = TrackWithMotionModel();
+                        cout << "Motion model tracking attempted..." << bOK << endl;
+                        if(!bOK)
+                        {
+                            bOK = TrackReferenceKeyFrame();
+                            cout << "Motion model tracking failed, Reference key frame tracking attempted..." << bOK << endl;
+                        }
+                    }
+                    break;
 
-                if(mVelocity.empty() || mCurrentFrame.mnId<mnLastRelocFrameId+2)
-                {
-                    bOK = TrackReferenceKeyFrame();
-                    cout << "Tracking keyframe only..." << bOK << endl;
-                    if(!bOK && mbDeadReckoning)
-                    {
-                        bOK = DeadReckoning();
-                        //mpFrameDrawer->Update(this);
-                        cout << "DeadReckoning attempted..." << bOK << endl;
-                    }
-                }
-                else
-                {
-                    cout << "starting tracking chain " << endl;
-                    bOK = TrackWithMotionModel();
-                    cout << "Motion model tracking attempted..." << bOK << endl;
-                    if(!bOK)
-                    {
-                        //bOK = TrackReferenceKeyFrame();
-                    cout << "Motion model tracking failed, Reference key frame tracking attempted..." << bOK << endl;
-                    }
-                    if(!bOK && mbDeadReckoning)
-                    {
-                        bOK = DeadReckoning();
-                        //mpFrameDrawer->Update(this);
-                        cout << "DeadReckoning attempted..." << bOK << endl;
-                    }
-                }
-            }
-            else
-            {
-                if(!mbDeadReckoning)
+                case LOST:
                     bOK = Relocalization();
-                cout << "Relocalizing..." << bOK << endl;
-                if(!bOK && mbDeadReckoning)
-                {
-                    bOK = DeadReckoning();
-                    //mpFrameDrawer->Update(this);
-                    cout << "DeadReckoning attempted" << bOK << endl;
-                }
+                    cout << "Relocalizing..." << bOK << endl;
+                    break;
+
+                case DEAD_RECKONING:
+                    bOK = TrackWithMotionModel();
+                    break;
+
+                default:
+                    bOK = false;
+            }
+
+            if(!bOK && mbDeadReckoning)
+            {
+                // Tracking was not successful, attempt DeadReckoning with external velocity estimate
+                bOK = DeadReckoning();
+                cout << "DeadReckoning attempted" << bOK << endl;
+                mState = DEAD_RECKONING;
             }
         }
         else
@@ -466,21 +460,25 @@ void Tracking::Track()
 
         if(bOK)
             mState = OK;
+        else if(mbDeadReckoning)
+            mState = DEAD_RECKONING;
         else
-            mState= OK;
+            mState = LOST;
 
         // Update drawer
         mpFrameDrawer->Update(this);
 
-        // If tracking were good, check if we insert a keyframe
-        // bOK = 1;
-        if(bOK)
-        {
-            if(!mbExtOdo)// Update motion model if using internal, otherwise it was updated before
-                UpdateMotionModel();
-
+        if(!(mState==LOST))
             mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
+
+        if(!mbExtOdo)// Update motion model if using internal model, otherwise it was updated before
+            UpdateMotionModel();
+
+        // If tracking were good, check if we insert a keyframe
+        // bOK = 1;
+        if(mState==OK)
+        {
             // Clean VO matches
             for(int i=0; i<mCurrentFrame.N; i++)
             {
@@ -546,6 +544,7 @@ void Tracking::Track()
     else
     {
         // This can happen if tracking is lost
+        cout << "mTcw was empty when storing relative frame poses" << endl;
         mlRelativeFramePoses.push_back(mlRelativeFramePoses.back());
         mlpReferences.push_back(mlpReferences.back());
         mlFrameTimes.push_back(mlFrameTimes.back());
@@ -855,8 +854,8 @@ bool Tracking::TrackReferenceKeyFrame()
                 nmatchesMap++;
         }
     }
-
-    return nmatchesMap>=20;
+    cout << "TrackReference found " << nmatchesMap << " matches." << endl;
+    return nmatchesMap>=50; // was 20
 }
 
 void Tracking::UpdateLastFrame()
@@ -964,6 +963,7 @@ bool Tracking::TrackWithMotionModel()
         fill(mCurrentFrame.mvpMapPoints.begin(),mCurrentFrame.mvpMapPoints.end(),static_cast<MapPoint*>(NULL));
         nmatches = matcher.SearchByProjection(mCurrentFrame,mLastFrame,2*th,mSensor==System::MONOCULAR);
     }
+    cout << nmatches << endl;
 
     if(nmatches<20)
         return false;
@@ -1010,8 +1010,10 @@ bool Tracking::TrackLocalMap()
 
     SearchLocalPoints();
 
-    // Optimize Pose
-    Optimizer::PoseOptimization(&mCurrentFrame);
+    // Optimize Pose only if tracking was successful
+    if(mState!=DEAD_RECKONING)
+        Optimizer::PoseOptimization(&mCurrentFrame);
+
     mnMatchesInliers = 0;
 
     // Update MapPoints Statistics
@@ -1061,6 +1063,10 @@ bool Tracking::NeedNewKeyFrame()
     // Do not insert keyframes if not enough frames have passed from last relocalisation
     if(mCurrentFrame.mnId<mnLastRelocFrameId+mMaxFrames && nKFs>mMaxFrames)
         return false;
+
+    // Insert Keyframe if tracking is only supported by external velocity estimate
+    if(mState==DEAD_RECKONING)
+        return true;
 
     // Tracked MapPoints in the reference keyframe
     int nMinObs = 3;
@@ -1118,6 +1124,7 @@ bool Tracking::NeedNewKeyFrame()
         else
         {
             mpLocalMapper->InterruptBA();
+            cout << "Bundle adjustment interrupted by NeedNewKeyframe" << endl;
             if(mSensor!=System::MONOCULAR)
             {
                 if(mpLocalMapper->KeyframesInQueue()<3)
@@ -1302,7 +1309,6 @@ void Tracking::UpdateLocalPoints()
 
 void Tracking::UpdateMotionModel()
 {
-    cout << "updating motion model" << endl;
   if(mbExtOdo)
   {
       if(!mLastExternalPoseMeas.empty())
@@ -1328,7 +1334,6 @@ void Tracking::UpdateMotionModel()
           return;
       }
   }
-    cout << "exiting motion model update" << endl;
 }
 
 void Tracking::UpdateLocalKeyFrames()
@@ -1606,65 +1611,28 @@ bool Tracking::Relocalization()
 bool Tracking::DeadReckoning()
 {
     cout << "entering dead reckoning" << endl;
-    if(mpLocalMapper->isStopped() || mpLocalMapper->stopRequested() || !mpLocalMapper->SetNotStop(true) || !mpLocalMapper->AcceptKeyFrames())
-        return false;
 
     // Set Frame pose according to motion model
     if(mVelocity.empty()) cout << "mVel was empty!" << endl;
     if(mLastFrame.mTcw.empty())
     {
-        cout << "mLastFrame.mtcw was empty!" << endl;
+        cout << "DeadReckoning aborted: mLastFrame.mtcw was empty!" << endl;
         return false;
     }
+
     mCurrentFrame.SetPose(mVelocity*mLastFrame.mTcw);
 
     mCurrentFrame.UpdatePoseMatrices();
 
-    // Create KeyFrame
-    KeyFrame* pKFini = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
+    if(NeedNewKeyFrame()) {
+        CreateNewKeyFrame();
+        cout << "Keyframe inserted" << endl;
+    } else
+        cout << "Keyframe insertion aborted" << endl;
 
-    // Insert KeyFrame in the map
-    mpMap->AddKeyFrame(pKFini);
-
-    // Create MapPoints and asscoiate to KeyFrame
-    for(int i=0; i<mCurrentFrame.N;i++)
-    {
-        float z = mCurrentFrame.mvDepth[i];
-        if(z>0)
-        {
-            cv::Mat x3D = mCurrentFrame.UnprojectStereo(i);
-            MapPoint* pNewMP = new MapPoint(x3D,pKFini,mpMap);
-            pNewMP->AddObservation(pKFini,i);
-            pKFini->AddMapPoint(pNewMP,i);
-            pNewMP->ComputeDistinctiveDescriptors();
-            pNewMP->UpdateNormalAndDepth();
-            mpMap->AddMapPoint(pNewMP);
-
-            mCurrentFrame.mvpMapPoints[i]=pNewMP;
-        }
-    }
-
-    cout << "New map created with " << mpMap->MapPointsInMap() << " points" << endl;
-
-    mpLocalMapper->InsertKeyFrame(pKFini);
-
-    mLastFrame = Frame(mCurrentFrame);
-    mnLastKeyFrameId=mCurrentFrame.mnId;
-    mpLastKeyFrame = pKFini;
-
-    mvpLocalKeyFrames.push_back(pKFini);
-    //mvpLocalMapPoints=mpMap->GetAllMapPoints();
-    mpReferenceKF = pKFini;
-    mCurrentFrame.mpReferenceKF = pKFini;
-
-    //mpMap->SetReferenceMapPoints(mvpLocalMapPoints);
-
-    mpMap->mvpKeyFrameOrigins.push_back(pKFini);
-
-    mpMapDrawer->SetCurrentCameraPose(mCurrentFrame.mTcw);
 
     cout << "returning from dead reckoning" << endl;
-    return false;
+    return true;
 }
 
 void Tracking::Reset()

@@ -86,7 +86,8 @@ public:
         NO_IMAGES_YET=0,
         NOT_INITIALIZED=1,
         OK=2,
-        LOST=3
+        LOST=3,
+        DEAD_RECKONING=4
     };
 
     eTrackingState mState;
@@ -233,6 +234,7 @@ protected:
     unsigned int mnLastRelocFrameId;
 
     //Motion Model
+    //Usage mPose_3_w = mVel_3_2*mPose_2_w = mVel_2_1*mPose_2_w=(mPose_2_w*mPose_w_1)*mPose_2_w
     cv::Mat mVelocity;
 
     //Color order (true RGB, false BGR, ignored if grayscale)
