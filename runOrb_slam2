@@ -1,2 +1,0 @@
-rosrun orb_slam2 stereo Vocabulary/ORBvoc.txt Examples/Stereo/EuRoC.yaml true
-

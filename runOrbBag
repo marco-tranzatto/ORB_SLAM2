@@ -1,1 +1,0 @@
-rosbag play --pause ../rovio/MH_05_difficult.bag /cam0/image_raw:=/camera/left/image_raw /cam1/image_raw:=/camera/right/image_raw

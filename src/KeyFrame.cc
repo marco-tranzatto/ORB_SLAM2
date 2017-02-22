@@ -41,7 +41,7 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mvInvLevelSigma2(F.mvInvLevelSigma2), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
     mnMaxY(F.mnMaxY), mK(F.mK), mvpMapPoints(F.mvpMapPoints), mpKeyFrameDB(pKFDB),
     mpORBvocabulary(F.mpORBvocabulary), mbFirstConnection(true), mpParent(NULL), mbNotErase(false),
-    mbToBeErased(false), mbBad(false), mbWeakTracking(false), mHalfBaseline(F.mb/2), mpMap(pMap)
+    mbToBeErased(false), mbBad(false), mbWeakTracking(false), mWeakTrackingThreshold(-1), mHalfBaseline(F.mb/2), mpMap(pMap)
 {
     mnId=nNextId++;
 
@@ -348,11 +348,14 @@ void KeyFrame::UpdateConnections()
     if(vPairs.empty()) {
         vPairs.push_back(make_pair(nmax, pKFmax));
         pKFmax->AddConnection(this, nmax);
+    }
+
+    if(nmax<mWeakTrackingThreshold)
+    {
         mbWeakTracking = true;
         cout << "Weak tracking flag set for KF " << mnId << endl;
-    } else {
-        mbWeakTracking = false;
     }
+
 
     sort(vPairs.begin(),vPairs.end());
     list<KeyFrame*> lKFs;
@@ -551,6 +554,11 @@ bool KeyFrame::isBad()
 {
     unique_lock<mutex> lock(mMutexConnections);
     return mbBad;
+}
+
+void KeyFrame::setWeakTrackingThreshold(int thr)
+{
+    mWeakTrackingThreshold=thr;
 }
 
 bool KeyFrame::isWeakTracking()

@@ -105,6 +105,7 @@ public:
     void SetBadFlag();
     bool isBad();
 
+    void setWeakTrackingThreshold(int thr);
     bool isWeakTracking();
 
     // Compute Scene Depth (q=2 median). Used in monocular.
@@ -226,6 +227,8 @@ protected:
     bool mbToBeErased;
     bool mbBad;
     bool mbWeakTracking;
+
+    int mWeakTrackingThreshold;
 
     float mHalfBaseline; // Only for visualization
 

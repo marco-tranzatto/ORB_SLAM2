@@ -260,8 +260,7 @@ void System::PublishOdometry()
 {
 	if(!((mpTracker->mCurrentFrame).mTcw.empty()) & !(mpTracker->GetVelocity().empty()))
 	{
-        double dt = mpTracker->mCurrentFrame.mTimeStamp - mpTracker->GetLastFrame().mTimeStamp;
-        dt = 0.05;
+        double dt = mpTracker->mCurrentFrame.mTimeStamp - mpTracker->GetLastTimeStamp();
 
         nav_msgs::Odometry odometryMsg;
 
@@ -338,15 +337,15 @@ void System::PublishPoseTransform(ros::Time t, const cv::Mat &T21, std::string f
 
 void System::PublishInertialTransform(ros::Time t, std::string mapFrame, std::string worldFrame, std::string initialFrame)
 {
-    vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
-    sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
-
     // Transform all keyframes so that the first keyframe is at the origin.
     // After a loop closure the first keyframe might not be at the origin.
-    cv::Mat Tow = vpKFs[0]->GetPose();
 
+    //vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+    //sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+    //cv::Mat Tow = vpKFs[0]->GetPose();
+
+    cv::Mat Tow = mpMap->GetFirstKeyframe()->GetPose();
     PublishPoseTransform(t, Tow, worldFrame, mapFrame);
-
     PublishPoseTransform(t, mpTracker->mInitialPosition, worldFrame, initialFrame);
 }
 

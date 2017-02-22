@@ -47,6 +47,7 @@ public:
     void SetReferenceMapPoints(const std::vector<MapPoint*> &vpMPs);
 
     std::vector<KeyFrame*> GetAllKeyFrames();
+    KeyFrame* GetFirstKeyframe();
     std::vector<MapPoint*> GetAllMapPoints();
     std::vector<MapPoint*> GetReferenceMapPoints();
 

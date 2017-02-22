@@ -67,7 +67,7 @@ public:
     void SetViewer(Viewer* pViewer);
 
     cv::Mat GetVelocity();
-    Frame GetLastFrame();
+    double GetLastTimeStamp();
 
     // Load new settings
     // The focal lenght should be similar or scale prediction will fail when projecting points
@@ -118,6 +118,13 @@ public:
 
     // True if tracking should advance using motion model estimate even when tracking is lost
     int mbDeadReckoning;
+
+    // True if an initial guess of the pose should be included as fixed node in the pose optimization
+    int mbUsePosePrior;
+
+    // Weak tracking threshold. If the best covisible keyframe has less than this number of covisible features
+    // the relative position will be reinforced with additional edges in the bundle adjustment.
+    int mReinforceWeakTrackingThreshold;
 
     // Buffers for initialization and motion estimation via external odometry
     cv::Mat mInitialPosition;

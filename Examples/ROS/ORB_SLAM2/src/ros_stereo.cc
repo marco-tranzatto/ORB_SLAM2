@@ -131,7 +131,7 @@ int main(int argc, char **argv)
             nav_msgs::Odometry, geometry_msgs::PoseWithCovarianceStamped> sync_pol_odometry;
     message_filters::Subscriber<nav_msgs::Odometry> odometry_sub(nh, "/rovio/odometry", 1);
     message_filters::Subscriber<geometry_msgs::PoseWithCovarianceStamped> extrinsics_sub(nh, "/rovio/extrinsics0", 1);
-    message_filters::Synchronizer<sync_pol_odometry> sync_odometry(sync_pol_odometry(50), left_sub, right_sub, odometry_sub, extrinsics_sub);
+    message_filters::Synchronizer<sync_pol_odometry> sync_odometry(sync_pol_odometry(500), left_sub, right_sub, odometry_sub, extrinsics_sub);
     sync_odometry.registerCallback(boost::bind(&ImageGrabber::GrabStereo,&igb,_1,_2,_3,_4));
 
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::Image> sync_pol_img;

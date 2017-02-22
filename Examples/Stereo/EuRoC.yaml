@@ -85,7 +85,7 @@ RIGHT.P:  !!opencv-matrix
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
-ORBextractor.nFeatures: 1200
+ORBextractor.nFeatures: 600
 
 # ORB Extractor: Scale factor between levels in the scale pyramid 	
 ORBextractor.scaleFactor: 1.2
@@ -135,5 +135,18 @@ Tracking.MotionModelSource: 1
 # Choose whether system should be reset completely if tracking is lost soon after last new map creation
 Tracking.ResetIfLost: 0
 
-# Choose max number of frames until keyframe insertion
-Tracking.MaxNumberFramesBeforeKF: 5
+# Choose max number of frames until keyframe insertion. Defaults to framesPerSecond if invalid, eg <1
+Tracking.MaxNumberFramesBeforeKF: -5
+
+# Choose whether - in the case of lost tracking - pose estimates obtained by velocity model should be set as next valid pose
+Tracking.DeadReckoning: 1
+
+# Choose whether an initial guess of the pose should be included as fixed node in the pose optimization
+Tracking.PoseOptimizationPrior: 1
+
+# Choose weak tracking threshold. If the best covisible keyframe has less than this number of covisible features
+# the relative position will be reinforced with additional edges in the bundle adjustment. Set -1 for no reinforcement.
+Tracking.ReinforceWeakTrackingThreshold: -1
+
+# Choose whether the number of extracted features per frame should be adapted according to number of matched points
+Tracking.AdaptNFeatures: 1
