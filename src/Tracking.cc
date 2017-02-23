@@ -1650,7 +1650,7 @@ bool Tracking::DeadReckoning()
 {
 
     // Set Frame pose according to motion model
-    if(mVelocity.empty() || mLastFrame.mTcw.empty()))
+    if(mVelocity.empty() || mLastFrame.mTcw.empty())
     {
         return false;
     }
