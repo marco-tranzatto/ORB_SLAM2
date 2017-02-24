@@ -1,7 +1,39 @@
 # ORB-SLAM2
 **Authors:** [Raul Mur-Artal](http://webdiis.unizar.es/~raulmur/), [Juan D. Tardos](http://webdiis.unizar.es/~jdtardos/), [J. M. M. Montiel](http://webdiis.unizar.es/~josemari/) and [Dorian Galvez-Lopez](http://doriangalvez.com/) ([DBoW2](https://github.com/dorian3d/DBoW2))
 
+**Modified:** Ueli Graf, 23.02.2017
+
 **Current version:** 1.0.0 
+
+This is RSLAM, a robust SLAM extension to ORB-SLAM2. RSLAM relies on additional odometry estimates provided in a ROS environment. At the time of writing, only stereo mode is supported.
+
+#0. Quick start
+
+
+##0.1: Install dependencies:
+
+Pangolin: https://github.com/stevenlovegrove/Pangolin
+
+OpenCV: http://opencv.org. **Required at leat 2.4.3. Tested with OpenCV 2.4.11**
+
+Eigen: http://eigen.tuxfamily.org. **Required at least 3.1.0**
+
+BLAS: sudo apt-get install libblas-dev
+
+LAPACK: sudo apt-get install liblapack-dev
+
+##0.2: Install and build
+
+Clone the repository using git clone https://github.com/grafue/RSLAM.git
+
+Execute the build script (build.sh) found in the root directory at RSLAM/build.sh
+
+##0.3: Launch
+Launch
+
+
+#Original Documentation:
+
 
 ORB-SLAM2 is a real-time SLAM library for **Monocular**, **Stereo** and **RGB-D** cameras that computes the camera trajectory and a sparse 3D reconstruction (in the stereo and RGB-D case with true scale). It is able to detect loops and relocalize the camera in real time. We provide examples to run the SLAM system in the [KITTI dataset](http://www.cvlibs.net/datasets/kitti/eval_odometry.php) as stereo or monocular, in the [TUM dataset](http://vision.in.tum.de/data/datasets/rgbd-dataset) as RGB-D or monocular, and in the [EuRoC dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets) as stereo or monocular. We also provide a ROS node to process live monocular, stereo or RGB-D streams. **The library can be compiled without ROS**. ORB-SLAM2 provides a GUI to change between a *SLAM Mode* and *Localization Mode*, see section 9 of this document.
 
