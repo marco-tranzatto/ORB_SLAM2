@@ -36,6 +36,13 @@
 #include "ORBVocabulary.h"
 #include "Viewer.h"
 
+#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <nav_msgs/Odometry.h>
+#include <ros/ros.h>
+
+#include <tf/transform_broadcaster.h>
+
 namespace ORB_SLAM2
 {
 
@@ -55,6 +62,7 @@ public:
         STEREO=1,
         RGBD=2
     };
+
 
 public:
 
@@ -106,6 +114,28 @@ public:
     // See format details at: http://www.cvlibs.net/datasets/kitti/eval_odometry.php
     void SaveTrajectoryKITTI(const string &filename);
 
+    // Sets the handle to the ROS publisher
+    void SetPublisherHandle(const ros::Publisher pubHandle);
+
+    // Publishes current odometry state to rostopic orb_slam2/odometry
+    void PublishOdometry();
+
+    // Publishes transforms to tf tree
+    void PublishPoseTransform(ros::Time t, const cv::Mat &T21, std::string frame1, std::string frame2);
+    void PublishInertialTransform(ros::Time t, std::string mapFrame, std::string worldFrame, std::string initialPose);
+
+    // Check whether the tracker initial pose was initialized
+    bool CheckTrackerInitialization();
+
+    // Set initial tracker pose provided by external measurement
+    void SetTrackerInitialPose(const nav_msgs::OdometryConstPtr& msgOdometry,
+                               const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
+
+
+    void SetMotionModel(const nav_msgs::OdometryConstPtr& msgOdometry,
+                        const geometry_msgs::PoseWithCovarianceStampedConstPtr& msgPose);
+
+
     // TODO: Save/Load functions
     // SaveMap(const string &filename);
     // LoadMap(const string &filename);
@@ -156,6 +186,11 @@ private:
     std::mutex mMutexMode;
     bool mbActivateLocalizationMode;
     bool mbDeactivateLocalizationMode;
+
+    // Handle for ROS message publishing
+    ros::Publisher publisherHandle;
+    tf::TransformBroadcaster tfBroadcaster;
+
 };
 
 }// namespace ORB_SLAM

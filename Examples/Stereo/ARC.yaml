@@ -5,10 +5,10 @@
 #--------------------------------------------------------------------------------------------
 
 # Camera calibration and distortion parameters (OpenCV) 
-Camera.fx: 435.2046959714599
-Camera.fy: 435.2046959714599
-Camera.cx: 367.4517211914062
-Camera.cy: 252.2008514404297
+Camera.fx: 471.547836
+Camera.fy: 471.547836
+Camera.cx: 396.163179
+Camera.cy: 261.288740
 
 Camera.k1: 0.0
 Camera.k2: 0.0
@@ -22,7 +22,7 @@ Camera.height: 480
 Camera.fps: 20.0
 
 # stereo baseline times fx
-Camera.bf: 47.90639384423901
+Camera.bf: 51.817399
 
 # Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale)
 Camera.RGB: 1
@@ -40,22 +40,22 @@ LEFT.D: !!opencv-matrix
    rows: 1
    cols: 5
    dt: d
-   data:[-0.28340811, 0.07395907, 0.00019359, 1.76187114e-05, 0.0]
+   data:[-0.303422, 0.099615, -0.000375, 0.000152, 0.000000]
 LEFT.K: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [458.654, 0.0, 367.215, 0.0, 457.296, 248.375, 0.0, 0.0, 1.0]
+   data: [469.079122, 0.000000, 396.163179, 0.000000, 468.929504, 261.288740, 0.000000, 0.000000, 1.000000]
 LEFT.R:  !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [0.999966347530033, -0.001422739138722922, 0.008079580483432283, 0.001365741834644127, 0.9999741760894847, 0.007055629199258132, -0.008089410156878961, -0.007044357138835809, 0.9999424675829176]
+   data: [0.999996, 0.001155, -0.002605, -0.001149, 0.999996, 0.002609, 0.002608, -0.002606, 0.999993]
 LEFT.P:  !!opencv-matrix
    rows: 3
    cols: 4
    dt: d
-   data: [435.2046959714599, 0, 367.4517211914062, 0,  0, 435.2046959714599, 252.2008514404297, 0,  0, 0, 1, 0]
+   data: [471.547836, 0.000000, 387.789700, 0.000000, 0.000000, 471.547836, 241.582283, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]
 
 RIGHT.height: 480
 RIGHT.width: 752
@@ -63,29 +63,29 @@ RIGHT.D: !!opencv-matrix
    rows: 1
    cols: 5
    dt: d
-   data:[-0.28368365, 0.07451284, -0.00010473, -3.555907e-05, 0.0]
+   data:[-0.296003, 0.087077, -0.000056, -0.000248, 0.000000]
 RIGHT.K: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [457.587, 0.0, 379.999, 0.0, 456.134, 255.238, 0.0, 0.0, 1]
+   data: [466.386207, 0.000000, 366.755083, 0.000000, 466.376617, 223.429515, 0.000000, 0.000000, 1.000000]
 RIGHT.R:  !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data: [0.9999633526194376, -0.003625811871560086, 0.007755443660172947, 0.003680398547259526, 0.9999684752771629, -0.007035845251224894, -0.007729688520722713, 0.007064130529506649, 0.999945173484644]
+   data: [0.999858, -0.000106, -0.016842, 0.000062, 0.999997, -0.002608, 0.016842, 0.002607, 0.999855]
 RIGHT.P:  !!opencv-matrix
    rows: 3
    cols: 4
    dt: d
-   data: [435.2046959714599, 0, 367.4517211914062, -47.90639384423901, 0, 435.2046959714599, 252.2008514404297, 0, 0, 0, 1, 0]
+   data: [471.547836, 0.000000, 387.789700, -51.817399, 0.000000, 471.547836, 241.582283, 0.000000, 0.000000, 0.000000, 1.000000, 0.000000]
 
 #--------------------------------------------------------------------------------------------
 # ORB Parameters
 #--------------------------------------------------------------------------------------------
 
 # ORB Extractor: Number of features per image
-ORBextractor.nFeatures: 600
+ORBextractor.nFeatures: 1200 # 1200
 
 # ORB Extractor: Scale factor between levels in the scale pyramid 	
 ORBextractor.scaleFactor: 1.2
@@ -97,22 +97,22 @@ ORBextractor.nLevels: 8
 # Image is divided in a grid. At each cell FAST are extracted imposing a minimum response.
 # Firstly we impose iniThFAST. If no corners are detected we impose a lower value minThFAST
 # You can lower these values if your images have low contrast			
-ORBextractor.iniThFAST: 20
-ORBextractor.minThFAST: 7
+ORBextractor.iniThFAST: 20 # 20
+ORBextractor.minThFAST: 5 # 5
 
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------
-Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameSize: 0.7 #0.05
 Viewer.KeyFrameLineWidth: 1
 Viewer.GraphLineWidth: 0.9
 Viewer.PointSize:2
-Viewer.CameraSize: 0.08
+Viewer.CameraSize: 0.7 #0.08
 Viewer.CameraLineWidth: 3
 Viewer.ViewpointX: 0
-Viewer.ViewpointY: -0.7
-Viewer.ViewpointZ: -1.8
-Viewer.ViewpointF: 500
+Viewer.ViewpointY: -12 #-0.7
+Viewer.ViewpointZ: -8 #-1.8
+Viewer.ViewpointF: 500 #500
 
 
 #--------------------------------------------------------------------------------------------
@@ -129,9 +129,6 @@ Tracking.InitialPosition: 1
 # 1 external: same as above but feed external measurement for estimation mVelocity = T_cw(k-1)*T_wc(k-1)
 Tracking.MotionModelSource: 1
 
-# Use pose optimization in each frame starting with the predicted pose (on) or use predicted pose directly (off)
-# Tracking.PoseOptimization: on / off
-
 # Choose whether system should be reset completely if tracking is lost soon after last new map creation
 Tracking.ResetIfLost: 0
 
@@ -146,7 +143,8 @@ Tracking.PoseOptimizationPrior: 1
 
 # Choose weak tracking threshold. If the best covisible keyframe has less than this number of covisible features
 # the relative position will be reinforced with additional edges in the bundle adjustment. Set -1 for no reinforcement.
-Tracking.ReinforceWeakTrackingThreshold: -1
+Tracking.ReinforceWeakTrackingThreshold: 10
 
 # Choose whether the number of extracted features per frame should be adapted according to number of matched points
-Tracking.AdaptNFeatures: 1
+Tracking.AdaptNFeatures: 0
+

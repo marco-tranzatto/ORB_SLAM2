@@ -170,6 +170,9 @@ This will create **libORB_SLAM2.so**  at *lib* folder and the executables **mono
 
   ```
   export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:PATH/ORB_SLAM2/Examples/ROS
+
+
+export ROS_PACKAGE_PATH=${ROS_PACKAGE_PATH}:/home/grafue/catkin_ws/src/ORB_SLAM2/Examples/ROS
   ```
   
 2. Go to *Examples/ROS/ORB_SLAM2* folder and execute:
