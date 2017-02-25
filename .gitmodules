@@ -1,0 +1,3 @@
+[submodule "rovio"]
+	path = rovio
+	url = https://github.com/grafue/rovio.git
