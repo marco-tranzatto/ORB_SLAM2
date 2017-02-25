@@ -10,7 +10,7 @@ This is RSLAM, a robust SLAM extension to ORB-SLAM2. RSLAM relies on additional 
 #0. Quick start
 
 
-##0.1: Install dependencies:
+##0.1 Install dependencies:
 
 Pangolin: https://github.com/stevenlovegrove/Pangolin
 
@@ -18,22 +18,45 @@ OpenCV: http://opencv.org. **Required at leat 2.4.3. Tested with OpenCV 2.4.11**
 
 Eigen: http://eigen.tuxfamily.org. **Required at least 3.1.0**
 
-BLAS: sudo apt-get install libblas-dev
+BLAS: 
+```
+sudo apt-get install libblas-dev
+```
 
-LAPACK: sudo apt-get install liblapack-dev
+LAPACK: 
+```
+sudo apt-get install liblapack-dev
+```
 
-##0.2: Install and build
+##0.2 Install additional odometry software
+This software was tested with rovio https://github.com/ethz-asl/rovio
 
-Clone the repository using git clone https://github.com/grafue/RSLAM.git
+##0.3 Install and build RSLAM
 
-Execute the build script (build.sh) found in the root directory at RSLAM/build.sh
+Clone the repository and execute the build script found in the root directory at RSLAM/build.sh 
+```
+git clone https://github.com/grafue/RSLAM.git
+cd RSLAM/
+sh build.sh
+```
+##0.4 Build catkin packages
+```
+catkin build
+```
 
-##0.3: Launch
-Launch
+##0.5 Launch
+Use the launch file found at RSLAM/Examples/ROS/launch/RSLAM.launch for an exemplary launch file.
 
+The current version assumes that rovio is used in parallel (that is, rovio must be running) and publishes odometry estimates to /rovio/odometry and the transformation from camera frame to odometry reference frame to /rovio/extrinsics0.
+rosbag can be selected within the launch file. If the resulting estimated trajectory is implausible, try decrease the rate (-r parameter in the rosbag section in RSLAM.launch).
+Topics can be changed by changing the remap command in RSLAM.launch or by changing the source code at ros_stereo.cc.
+rovio configuration files for the rosbag provided in Examples/ROS/rosbags are found in the same directory.
+
+```
+roslaunch Examples/ROS/launch/RSLAM.launch
+```
 
 #Original Documentation:
-
 
 ORB-SLAM2 is a real-time SLAM library for **Monocular**, **Stereo** and **RGB-D** cameras that computes the camera trajectory and a sparse 3D reconstruction (in the stereo and RGB-D case with true scale). It is able to detect loops and relocalize the camera in real time. We provide examples to run the SLAM system in the [KITTI dataset](http://www.cvlibs.net/datasets/kitti/eval_odometry.php) as stereo or monocular, in the [TUM dataset](http://vision.in.tum.de/data/datasets/rgbd-dataset) as RGB-D or monocular, and in the [EuRoC dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets) as stereo or monocular. We also provide a ROS node to process live monocular, stereo or RGB-D streams. **The library can be compiled without ROS**. ORB-SLAM2 provides a GUI to change between a *SLAM Mode* and *Localization Mode*, see section 9 of this document.
 
