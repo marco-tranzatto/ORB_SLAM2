@@ -32,9 +32,9 @@ sudo apt-get install liblapack-dev
 ```
 
 ##1.2 Install additional odometry software
-This software was tested with [rovio](https://github.com/ethz-asl/rovio) which is included as a submodule. 
+This software was tested with [rovio](https://github.com/ethz-asl/rovio) which is included as a submodule. If rovio is to be used, this step can be skipped. If a different visual-inertial odometry framework should be used, install it seperately. Reference body velocity (IMU body velocity in case of rovio) should be published to /rovio/odometry and the transformation from reference body to left camera should be published to /rovio/extrinsics0.
 
-##1.3 Clone and build RSLAM
+##1.3 Clone and build underlying frameworks
 
 Clone the repository and execute the build script found in the root directory at SERVO/build.sh 
 ```
@@ -43,28 +43,40 @@ cd SERVO
 chmod +x build.sh
 ./build.sh
 ```
-##1.4 Build catkin packages
+##1.4 Build catkin packages:
 ```
-catkin build
+catkin build rovio orb_slam2 -DCMAKE_BUILD_TYPE=Release
 ```
 
-##1.5 Join the rosbag provided for testing as a split archive
+##1.5 Unpack rosbag
+
+Join the rosbag provided for testing as a split archive and decompress it for better runtime performance.
 
 Open a terminal at SERVO/Examples/ROS/
 ```
 cat SERVO_bag_* > SERVO.bag
+rosbag decompress SERVO.bag
 ```
 
 ##2 Launch
-Use the launch file found at SERVO/Examples/ROS/launch/servo.launch for an exemplary launch file.
+Use the exemplary launch files found at SERVO/Examples/ROS/launch/
 
-The current version assumes that rovio is used in parallel (that is, rovio must be running) and publishes odometry estimates to /rovio/odometry and the transformation from camera frame to odometry reference frame to /rovio/extrinsics0.
-rosbag can be selected within the launch file. If the resulting estimated trajectory is implausible, try decrease the rate (-r parameter in the rosbag section in servo.launch).
-Topics can be changed by changing the remap command in SERVO.launch or by changing the source code at ros_stereo.cc.
+```
+roslaunch Examples/ROS/launch/orb_slam2.launch
+```
+launches ORB_SLAM2 using the provided rosbag in original configuration (Stereo/ORB_SLAM2.yaml). Wait for a few seconds until the vocabulary has been loaded, then press space bar in the terminal to start playback.
 
+Use
 ```
 roslaunch Examples/ROS/launch/servo.launch
 ```
+to launch with the proposed changes (Stereo/SERVO.yaml) and verify increased robustness and performance. Wait for a few seconds until the vocabulary has been loaded, then press space bar in the terminal to start playback.
+
+Use the parameter named ORBextractor.nFeatures in the *.yaml files for tuning computational cost.
+
+The current version assumes that rovio is used in parallel (that is, rovio must be running - it is launched automatically when using the provided launch files) and publishes odometry estimates to /rovio/odometry and the transformation from camera frame to odometry reference frame to /rovio/extrinsics0.
+rosbag can be selected within the launch file. If the resulting estimated trajectory is implausible, try decrease the rate (-r parameter for the rosbag node section in the launch files) or tune the compational complexity by changing the ORBextractor.nFeatures parameter in the *.yaml settings files found at Examples/ROS/Stereo/
+Topics can be changed by changing the remap command in launch files or by changing the source code at ros_stereo.cc.
 
 #3 Original Documentation:
 For extensive documentation on the base implementations of the frameworks used, see the original repositories of [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) and [rovio](https://github.com/ethz-asl/rovio).

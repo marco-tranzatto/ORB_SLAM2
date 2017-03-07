@@ -1,6 +1,6 @@
 <launch>
 	rosparam set use_sim_time true
-  	<node pkg="rosbag" type="play" name="player" args="-r 0.6 -s 0 --pause $(find orb_slam2)/../rosbags/SERVO.bag"/>
+  	<node pkg="rosbag" type="play" name="player" args="-r 1 -s 0 --pause $(find orb_slam2)/../SERVO.bag"/>
 
 <!--	Use this section if your odometry estimates are not published to the hardcoded topics -->
 <!--
