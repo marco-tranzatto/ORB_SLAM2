@@ -1,28 +1,27 @@
 # ORB-SLAM2
 **Authors:** [Raul Mur-Artal](http://webdiis.unizar.es/~raulmur/), [Juan D. Tardos](http://webdiis.unizar.es/~jdtardos/), [J. M. M. Montiel](http://webdiis.unizar.es/~josemari/) and [Dorian Galvez-Lopez](http://doriangalvez.com/) ([DBoW2](https://github.com/dorian3d/DBoW2))
 
-**Modified:** Ueli Graf, 23.02.2017
+**Modified:** Ueli Graf, 07.03.2017
 
 **Current version:** 1.0.0 
 
-This is RSLAM, a robust SLAM extension to ORB-SLAM2. RSLAM relies on additional odometry estimates provided in a ROS environment. At the time of writing, only stereo mode is supported.
+This is RSLAM, a robust SLAM extension to ORB-SLAM2. RSLAM relies on additional odometry estimates provided in a ROS environment. At the time of writing, only stereo SLAM mode is supported.
 
 #0. Quick start
 
 
 ##0.1 Install dependencies:
 
-Pangolin: https://github.com/stevenlovegrove/Pangolin
+[Pangolin](https://github.com/stevenlovegrove/Pangolin)
 
-OpenCV: http://opencv.org. **Required at leat 2.4.3. Tested with OpenCV 2.4.11**
+[OpenCV](http://opencv.org) **Required at leat 2.4.3. Tested with OpenCV 2.4.11**
 
-Eigen: http://eigen.tuxfamily.org. **Required at least 3.1.0**
+[Eigen3](http://eigen.tuxfamily.org) **Required at least 3.1.0**
 
 BLAS: 
 ```
 sudo apt-get install libblas-dev
 ```
-
 LAPACK: 
 ```
 sudo apt-get install liblapack-dev
@@ -44,7 +43,14 @@ sh build.sh
 catkin build
 ```
 
-##0.5 Launch
+##0.5 Join the rosbag provided for testing as a split archive
+
+Open a terminal at RSLAM/Examples/ROS/
+```
+cat RSLAM_bag_* > RSLAM.bag
+```
+
+##0.6 Launch
 Use the launch file found at RSLAM/Examples/ROS/launch/RSLAM.launch for an exemplary launch file.
 
 The current version assumes that rovio is used in parallel (that is, rovio must be running) and publishes odometry estimates to /rovio/odometry and the transformation from camera frame to odometry reference frame to /rovio/extrinsics0.
@@ -53,7 +59,7 @@ Topics can be changed by changing the remap command in RSLAM.launch or by changi
 rovio configuration files for the rosbag provided in Examples/ROS/rosbags are found in the same directory.
 
 ```
-roslaunch Examples/ROS/launch/RSLAM.launch
+roslaunch Examples/ROS/launch/rslam.launch
 ```
 
 #Original Documentation:
