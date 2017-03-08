@@ -96,6 +96,7 @@ Topics can be changed by changing the remap command in launch files or by changi
 
 #2 Available Topics
 Additional to all topics of the respective base implementation:
+
 /orb_slam2/odometry: odometry with respect to the left camera (cam0)
 
 #3 Changes/Implementation
