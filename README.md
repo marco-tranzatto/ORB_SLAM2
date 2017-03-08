@@ -77,8 +77,8 @@ Use the exemplary launch files found at SERVO/Examples/ROS/launch/
 Open a terminal at SERVO/
 
 ```
-source devel/setup.bash
-roslaunch src/SERVO/Examples/ROS/launch/orb_slam2.launch
+source ../../devel/setup.bash
+roslaunch Examples/ROS/launch/orb_slam2.launch
 ```
 launches ORB_SLAM2 using the provided rosbag in original configuration (Stereo/ORB_SLAM2.yaml). Wait for a few seconds until the vocabulary has been loaded, then press space bar in the terminal to start playback.
 
