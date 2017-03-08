@@ -361,9 +361,6 @@ int Optimizer::PoseOptimization(Frame *pFrame, cv::Mat *priorRefPose)
         //refEdge->setRobustKernel(rk);
         //rk->setDelta(5.991);
         optimizer.addEdge(refEdge);
-    } else
-    {
-        cout << "Reference edge not set in pose optimization" << endl;
     }
 
     // Set MapPoint vertices
