@@ -105,16 +105,16 @@ Topics can be changed by changing the remap command in launch files or by changi
 
 Most configuration parameters can bechanged by a .yaml-file found in Examples/Stereo. Use the launch file to specitfy the .yaml file that should be loaded. The parameter file contains short descriptions of the influence of each variable.
 
-#2 Available Topics
+#3 Available Topics
 Additional to all topics of the respective base implementation:
 
 /orb_slam2/odometry: odometry with respect to the left camera (cam0)
 
-#3 Changes/Implementation
+#4 Changes/Implementation
 
 The extension implements a supported tracking procedure for ORB_SLAM2 that incorporates visual-inertial information in the SLAM feature matching and map building process. To this end, VI-odometry is used to support the matching process by providing a pose initial guess at each timestep. Furthermore, the external pose estimate serves as a pose prior in the pose optimization and helps performs a dead reckoning method for contiunous tracking even when no features are matched successfully.
 
 Implementation details will be published soon.
 
-#4 Original Documentation
-For extensive documentation on the base implementations of the frameworks used, see the original repositories of [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) and [rovio](https://github.com/ethz-asl/rovio).
+#5 Original Documentation
+For extensive and additional documentation on the base implementations of the frameworks used, see the original repositories of [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) and [rovio](https://github.com/ethz-asl/rovio).
