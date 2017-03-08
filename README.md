@@ -96,7 +96,9 @@ Topics can be changed by changing the remap command in launch files or by changi
 
 #2 Changes/Implementation
 
-Will be published soon.
+The extension implements a supported tracking procedure for ORB_SLAM2 that incorporates visual-inertial information in the SLAM feature matching and map building process. To this end, VI-odometry is used to support the matching process by providing a pose initial guess at each timestep. Furthermore, the external pose estimate serves as a pose prior in the pose optimization and helps performs a dead reckoning method for contiunous tracking even when no features are matched successfully.
+
+Implementation details will be published soon.
 
 #3 Original Documentation
 For extensive documentation on the base implementations of the frameworks used, see the original repositories of [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) and [rovio](https://github.com/ethz-asl/rovio).
