@@ -12,9 +12,9 @@
 <!--	This section is provided for convenience, it launches rovio. Change the filter and config path according to your setup. -->
 
 	<node pkg="rovio" type="rovio_node" name="rovio" output="screen">
-  	<param name="filter_config" value="$(find rovio)/cfg/rovio_rslam.info"/>
-  	<param name="camera0_config" value="$(find rovio)/cfg/rslam_cam0.yaml"/>
-  	<param name="camera1_config" value="$(find rovio)/cfg/rslam_cam1.yaml"/>
+  	<param name="filter_config" value="$(find rovio)/cfg/rovio_servo.info"/>
+  	<param name="camera0_config" value="$(find rovio)/cfg/servo_cam0.yaml"/>
+  	<param name="camera1_config" value="$(find rovio)/cfg/servo_cam1.yaml"/>
   	</node>
 
 
