@@ -16,18 +16,28 @@ This is SERVO, a robust SLAM extension to ORB-SLAM2. SERVO relies on additional 
 
 [ROS](ros.org)
 
-[Pangolin](https://github.com/stevenlovegrove/Pangolin)
+[catkin_tools](http://catkin-tools.readthedocs.io/en/latest/installing.html)
+
+[Pangolin](https://github.com/stevenlovegrove/Pangolin) including Required Dependencies glew, cmake
+
+```
+sudo apt-get install libglew-dev
+sudo apt-get install cmake
+git clone https://github.com/stevenlovegrove/Pangolin.git
+cd Pangolin
+mkdir build
+cd build
+cmake ..
+make -j
+```
 
 [OpenCV](http://opencv.org) **Required at leat 2.4.3. Tested with OpenCV 2.4.11**
 
 [Eigen3](http://eigen.tuxfamily.org) **Required at least 3.1.0**
 
-BLAS: 2
+BLAS and LAPACK:
 ```
 sudo apt-get install libblas-dev
-```
-LAPACK: 
-```
 sudo apt-get install liblapack-dev
 ```
 
@@ -36,9 +46,12 @@ This software was tested with [rovio](https://github.com/ethz-asl/rovio) which i
 
 ##1.3 Clone and build underlying frameworks
 
-Clone the repository and execute the build script found in the root directory at SERVO/build.sh 
+Create a catkin workspace, clone the repository and submodules and execute the build script found in the root directory at SERVO/build.sh. Make sure your terminal is setup with the appropriate ROS environment variables.
 ```
-git clone https://github.com/grafue/SERVO.git
+mdir src
+catkin init
+cd src
+git clone --recursive https://github.com/grafue/SERVO.git
 cd SERVO
 chmod +x build.sh
 ./build.sh
