@@ -31,6 +31,13 @@ cmake ..
 make -j
 ```
 
+kindr:
+```
+sudo add-apt-repository ppa:ethz-asl/common
+sudo apt-get update
+sudo apt-get install ros-indigo-kindr-*
+```
+
 [OpenCV](http://opencv.org) **Required at leat 2.4.3. Tested with OpenCV 2.4.11**
 
 [Eigen3](http://eigen.tuxfamily.org) **Required at least 3.1.0**
