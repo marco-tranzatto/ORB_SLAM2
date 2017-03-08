@@ -101,6 +101,10 @@ The current version assumes that rovio is used in parallel (that is, rovio must 
 rosbag can be selected within the launch file. If the resulting estimated trajectory is implausible, try decrease the rate (-r parameter for the rosbag node section in the launch files) or tune the compational complexity by changing the ORBextractor.nFeatures parameter in the *.yaml settings files found at Examples/ROS/Stereo/
 Topics can be changed by changing the remap command in launch files or by changing the source code at ros_stereo.cc.
 
+#2 Options
+
+Most configuration parameters can bechanged by a .yaml-file found in Examples/Stereo. Use the launch file to specitfy the .yaml file that should be loaded. The parameter file contains short descriptions of the influence of each variable.
+
 #2 Available Topics
 Additional to all topics of the respective base implementation:
 
