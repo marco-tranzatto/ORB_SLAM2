@@ -12,7 +12,7 @@ This is SERVO, a robust SLAM extension to ORB-SLAM2. SERVO relies on additional 
 
 #1. Quick start
 
-##1.1 Install dependencies:
+##1.1 Install dependencies
 
 [ROS](ros.org)
 
@@ -56,7 +56,7 @@ cd SERVO
 chmod +x build.sh
 ./build.sh
 ```
-##1.4 Build catkin packages:
+##1.4 Build catkin packages
 ```
 catkin build rovio orb_slam2 -DCMAKE_BUILD_TYPE=Release
 ```
@@ -71,11 +71,14 @@ cat SERVO_bag_* > SERVO.bag
 rosbag decompress SERVO.bag
 ```
 
-##2 Launch
+##1.6 Launch
 Use the exemplary launch files found at SERVO/Examples/ROS/launch/
 
+Open a terminal at SERVO/
+
 ```
-roslaunch Examples/ROS/launch/orb_slam2.launch
+source devel/setup.bash
+roslaunch src/SERVO/Examples/ROS/launch/orb_slam2.launch
 ```
 launches ORB_SLAM2 using the provided rosbag in original configuration (Stereo/ORB_SLAM2.yaml). Wait for a few seconds until the vocabulary has been loaded, then press space bar in the terminal to start playback.
 
@@ -91,8 +94,9 @@ The current version assumes that rovio is used in parallel (that is, rovio must 
 rosbag can be selected within the launch file. If the resulting estimated trajectory is implausible, try decrease the rate (-r parameter for the rosbag node section in the launch files) or tune the compational complexity by changing the ORBextractor.nFeatures parameter in the *.yaml settings files found at Examples/ROS/Stereo/
 Topics can be changed by changing the remap command in launch files or by changing the source code at ros_stereo.cc.
 
-#3 Original Documentation:
+#2 Changes/Implementation
+
+Will be published soon.
+
+#3 Original Documentation
 For extensive documentation on the base implementations of the frameworks used, see the original repositories of [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) and [rovio](https://github.com/ethz-asl/rovio).
-
-
-
