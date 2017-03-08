@@ -94,11 +94,15 @@ The current version assumes that rovio is used in parallel (that is, rovio must 
 rosbag can be selected within the launch file. If the resulting estimated trajectory is implausible, try decrease the rate (-r parameter for the rosbag node section in the launch files) or tune the compational complexity by changing the ORBextractor.nFeatures parameter in the *.yaml settings files found at Examples/ROS/Stereo/
 Topics can be changed by changing the remap command in launch files or by changing the source code at ros_stereo.cc.
 
-#2 Changes/Implementation
+#2 Available Topics
+Additional to all topics of the respective base implementation:
+/orb_slam2/odometry: odometry with respect to the left camera (cam0)
+
+#3 Changes/Implementation
 
 The extension implements a supported tracking procedure for ORB_SLAM2 that incorporates visual-inertial information in the SLAM feature matching and map building process. To this end, VI-odometry is used to support the matching process by providing a pose initial guess at each timestep. Furthermore, the external pose estimate serves as a pose prior in the pose optimization and helps performs a dead reckoning method for contiunous tracking even when no features are matched successfully.
 
 Implementation details will be published soon.
 
-#3 Original Documentation
+#4 Original Documentation
 For extensive documentation on the base implementations of the frameworks used, see the original repositories of [ORB_SLAM2](https://github.com/raulmur/ORB_SLAM2) and [rovio](https://github.com/ethz-asl/rovio).
