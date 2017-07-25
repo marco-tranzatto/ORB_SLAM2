@@ -21,17 +21,17 @@
 #ifndef LOOPCLOSING_H
 #define LOOPCLOSING_H
 
-#include "KeyFrame.h"
-#include "LocalMapping.h"
-#include "Map.h"
-#include "ORBVocabulary.h"
-#include "Tracking.h"
+#include "orb_slam_2/KeyFrame.h"
+#include "orb_slam_2/LocalMapping.h"
+#include "orb_slam_2/Map.h"
+#include "orb_slam_2/ORBVocabulary.h"
+#include "orb_slam_2/Tracking.h"
 
-#include "KeyFrameDatabase.h"
+#include "orb_slam_2/KeyFrameDatabase.h"
 
 #include <thread>
 #include <mutex>
-#include "Thirdparty/g2o/g2o/types/types_seven_dof_expmap.h"
+#include "g2o/types/types_seven_dof_expmap.h"
 
 namespace ORB_SLAM2
 {

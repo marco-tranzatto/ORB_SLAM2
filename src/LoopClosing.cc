@@ -18,15 +18,15 @@
 * along with ORB-SLAM2. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "LoopClosing.h"
+#include "orb_slam_2/LoopClosing.h"
 
-#include "Sim3Solver.h"
+#include "orb_slam_2/Sim3Solver.h"
 
-#include "Converter.h"
+#include "orb_slam_2/Converter.h"
 
-#include "Optimizer.h"
+#include "orb_slam_2/Optimizer.h"
 
-#include "ORBmatcher.h"
+#include "orb_slam_2/ORBmatcher.h"
 
 #include<mutex>
 #include<thread>
@@ -36,7 +36,7 @@ namespace ORB_SLAM2
 {
 
 LoopClosing::LoopClosing(Map *pMap, KeyFrameDatabase *pDB, ORBVocabulary *pVoc, const bool bFixScale):
-    mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap),
+    mbResetRequested(false), mbFinishRequested(false), mbFinished(true), mpMap(pMap), 
     mpKeyFrameDB(pDB), mpORBVocabulary(pVoc), mpMatchedKF(NULL), mLastLoopKFid(0), mbRunningGBA(false), mbFinishedGBA(true),
     mbStopGBA(false), mpThreadGBA(NULL), mbFixScale(bFixScale), mnFullBAIdx(0)
 {
