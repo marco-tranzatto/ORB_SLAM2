@@ -497,7 +497,7 @@ void System::SaveMap(const string &filename)
     cout << "----------------- Testing saving map:" << filename << std::endl;
 
     // testing TODO delete me!!!
-    mpMap->CreateTestingSet();
+    //mpMap->CreateTestingSet();
 
     std::ofstream os(filename);
     {

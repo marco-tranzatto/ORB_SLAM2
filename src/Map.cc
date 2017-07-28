@@ -25,8 +25,7 @@
 // Serialization for saving/loading map
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
-#include <boost/serialization/set.hpp> // TODO delete me if you serialize set elem by elem
-//#include "orb_slam_2/OpenCvMatSerialization.h" // Todo delete me
+#include <boost/serialization/set.hpp>
 #include "orb_slam_2/OpenCvSerialization.h" // Todo delete me
 
 namespace ORB_SLAM2
@@ -148,18 +147,37 @@ template void Map::load<boost::archive::binary_iarchive>(
 template<class Archive>
 void Map::save(Archive &ar, const unsigned int version) const
 {
+    int nItems;
+
+    // mspKeyFrames
+    cout << "Saving mspKeyFrames, size = " << mspKeyFrames.size() << endl;
+    ar & mspKeyFrames;
+
+    /*nItems = mspKeyFrames.size();
+    cout << "{INFO}mspKeyFrames size = " << nItems << endl;
+    ar & nItems;
+    std::for_each(mspKeyFrames.begin(), mspKeyFrames.end(),
+        [&ar](KeyFrame* pKeyFrame) {ar & *pKeyFrame;} );*/
+
+
     // test boost set serialization todo delete me
-    ar & test_2;
+    /*ar & test_2;
     ar & test_open_cv_matrix;
 
-    cout << "Map::save, version: " << version << endl;
+    cout << "Map::save, version: " << version << endl;*/
 }
 
 template<class Archive>
 void Map::load(Archive &ar, const unsigned int version)
 {
+    // TODO USE CLASS ACTUAL VARIABLE MEMBERS!!!
+    std::set<KeyFrame*> tmp_mspKeyFrames;
+    // mspKeyFrames
+    ar & tmp_mspKeyFrames;
+    cout << "Loaded tmp_mspKeyFrames, size = " << tmp_mspKeyFrames.size() << endl;
+
     // read test data
-    std::set<int> new_test_2;
+    /*std::set<int> new_test_2;
     cv::Mat new_test_open_cv_matrix;
     cout << "Map::load, version: " << version << endl;
 
@@ -173,7 +191,7 @@ void Map::load(Archive &ar, const unsigned int version)
     cout << endl;
 
     cout << "new_test_open_cv_matrix:" << endl;
-    cout << new_test_open_cv_matrix << endl;
+    cout << new_test_open_cv_matrix << endl;*/
 }
 
 void Map::CreateTestingSet()

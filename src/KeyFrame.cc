@@ -62,6 +62,20 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     SetPose(F.mTcw);    
 }
 
+KeyFrame::KeyFrame():
+    mnFrameId(0),  mTimeStamp(0.0), mnGridCols(FRAME_GRID_COLS), mnGridRows(FRAME_GRID_ROWS),
+    mfGridElementWidthInv(0.0), mfGridElementHeightInv(0.0),
+    mnTrackReferenceForFrame(0), mnFuseTargetForKF(0), mnBALocalForKF(0), mnBAFixedForKF(0),
+    mnLoopQuery(0), mnLoopWords(0), mnRelocQuery(0), mnRelocWords(0), mnBAGlobalForKF(0),
+    fx(0.0), fy(0.0), cx(0.0), cy(0.0), invfx(0.0), invfy(0.0),
+    mbf(0.0), mb(0.0), mThDepth(0.0), N(0), mnScaleLevels(0), mfScaleFactor(0),
+    mfLogScaleFactor(0.0),
+    mnMinX(0), mnMinY(0), mnMaxX(0),
+    mnMaxY(0)
+{
+    // Default serializing Constructor
+}
+
 void KeyFrame::ComputeBoW()
 {
     if(mBowVec.empty() || mFeatVec.empty())
@@ -682,6 +696,9 @@ void KeyFrame::save(Archive &ar, const unsigned int version) const
     // TODO check
     /*if (mbBad)
             return;*/
+    // TODO delete me
+    cout << "KeyFrame::save." << endl;
+
     ar & nNextId;
     ar & mnId;
     ar & mnFrameId;
@@ -783,11 +800,21 @@ void KeyFrame::save(Archive &ar, const unsigned int version) const
     ar & mHalfBaseline;
 
     // TODO and mpMap?!
+
+    // TODO delete me
+    unsigned int test_data = 55;
+    ar & test_data;
+
+    // TODO delete me
+    cout << "End KeyFrame::save." << endl;
 }
 
 template<class Archive>
 void KeyFrame::load(Archive &ar, const unsigned int version)
 {
+    // TODO delete me
+    cout << "KeyFrame::load." << endl;
+
     int nItems;bool is_id = false;
     bool has_parent = false;
     long unsigned int t_nId;
@@ -892,6 +919,14 @@ void KeyFrame::load(Archive &ar, const unsigned int version)
     ar & mbToBeErased;
     ar & mbBad;
     ar & mHalfBaseline;
+
+    // TODO delete me
+    unsigned int test_data ;
+    ar & test_data;
+    cout << "KeyFrame::load, test_data: " << test_data << endl;
+
+    // TODO delete me
+    cout << "End KeyFrame::load." << endl;
 }
 
 template<class Archive, class DataStr>
