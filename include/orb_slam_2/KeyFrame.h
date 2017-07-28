@@ -31,6 +31,9 @@
 
 #include <mutex>
 
+// Serialization to save/load keyframe
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/serialization.hpp>
 
 namespace ORB_SLAM2
 {
@@ -40,10 +43,17 @@ class MapPoint;
 class Frame;
 class KeyFrameDatabase;
 
+struct MapId
+{
+    bool is_valid;
+    long unsigned int id;
+};
+
 class KeyFrame
 {
 public:
     KeyFrame(Frame &F, Map* pMap, KeyFrameDatabase* pKFDB);
+    KeyFrame(); // needed for serialization
 
     // Pose functions
     void SetPose(const cv::Mat &Tcw);
@@ -115,6 +125,9 @@ public:
     static bool lId(KeyFrame* pKF1, KeyFrame* pKF2){
         return pKF1->mnId<pKF2->mnId;
     }
+
+    // Setters for map reusing
+    void SetMapPoints(std::vector<MapPoint*> spMapPoints);
 
 
     // The following variables are accesed from only 1 thread or never change (no mutex needed).
@@ -188,7 +201,6 @@ public:
     const int mnMaxY;
     const cv::Mat mK;
 
-
     // The following variables need to be accessed trough a mutex to be thread safe.
 protected:
 
@@ -231,6 +243,54 @@ protected:
     std::mutex mMutexPose;
     std::mutex mMutexConnections;
     std::mutex mMutexFeatures;
+
+private:
+    // Class serialization to save/load keyframe
+    friend class boost::serialization::access;
+
+    // Save keyframe to an archive
+    template<class Archive>
+    void save(Archive &ar, const unsigned int version) const;
+
+    // Load keyframe from an archive
+    template<class Archive>
+    void load(Archive &ar, const unsigned int version);
+
+    // Allows splitting serialization in save and load
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+        boost::serialization::split_member(ar, *this, version);
+    }
+
+    // Helpers to save id from data structures
+    template<class Archive, class DataStr>
+    void SerializerSaveId(Archive &ar, const DataStr &container) const;
+    template<class Archive>
+    void SerializerSaveConnectedKeyFrameWeights(Archive &ar,
+        const std::map<KeyFrame*,int> &container) const;
+    template<class Archive>
+    void SerializerSaveParent(Archive &ar,
+        const KeyFrame* const &container) const;
+
+    // Helpers to load id from data structures
+    template<class Archive, class DataStr>
+    void SerializerLoadId_nId(Archive &ar, DataStr* pContainer);
+    template<class Archive>
+    void SerializerLoadConnectedKeyFrameWeights_nId(Archive &ar,
+        std::map<long unsigned int,int>* pContainer);
+    template<class Archive>
+    void SerializerLoadParent_KfId(Archive &ar,
+        MapId *pContainer);
+
+    // Helping variables for loading an existing map
+    std::map<long unsigned int, MapId> mMapPoints_nId;
+    std::map<long unsigned int, int> mConnectedKeyFrameWeights_nId;
+    std::map<long unsigned int, MapId> mvpOrderedConnectedKeyFrames_nId;
+    MapId mParent_KfId_map;
+    std::map<long unsigned int, MapId> mChildrens_nId;
+    std::map<long unsigned int, MapId> mLoopEdges_nId;
+
 };
 
 } //namespace ORB_SLAM

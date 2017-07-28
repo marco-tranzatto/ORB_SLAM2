@@ -26,6 +26,8 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/set.hpp> // TODO delete me if you serialize set elem by elem
+//#include "orb_slam_2/OpenCvMatSerialization.h" // Todo delete me
+#include "orb_slam_2/OpenCvSerialization.h" // Todo delete me
 
 namespace ORB_SLAM2
 {
@@ -148,6 +150,7 @@ void Map::save(Archive &ar, const unsigned int version) const
 {
     // test boost set serialization todo delete me
     ar & test_2;
+    ar & test_open_cv_matrix;
 
     cout << "Map::save, version: " << version << endl;
 }
@@ -156,14 +159,21 @@ template<class Archive>
 void Map::load(Archive &ar, const unsigned int version)
 {
     // read test data
+    std::set<int> new_test_2;
+    cv::Mat new_test_open_cv_matrix;
     cout << "Map::load, version: " << version << endl;
 
     cout << "Testing set 2 after loading" << endl;
-    ar & test_2;
-    for (std::set<int>::iterator it=test_2.begin(); it!=test_2.end(); ++it)
-      cout << (*it) << ", ";
+    ar & new_test_2;
+    ar & new_test_open_cv_matrix;
 
+
+    for (std::set<int>::iterator it=new_test_2.begin(); it!=new_test_2.end(); ++it)
+      cout << (*it) << ", ";
     cout << endl;
+
+    cout << "new_test_open_cv_matrix:" << endl;
+    cout << new_test_open_cv_matrix << endl;
 }
 
 void Map::CreateTestingSet()
@@ -178,6 +188,8 @@ void Map::CreateTestingSet()
       cout << (*it) << ", ";
 
     cout << endl;
+
+    test_open_cv_matrix = (cv::Mat_<double>(3,3) << 55, 0, 0, 0, 28, 0, 0, 0, 33);
 }
 
 } //namespace ORB_SLAM

@@ -28,7 +28,7 @@
 
 #include <mutex>
 
-// Serialization for saving/loading map
+// Serialization to save/load map
 #include <boost/serialization/split_member.hpp>
 #include <boost/serialization/serialization.hpp>
 
@@ -72,6 +72,7 @@ public:
     // Testing todo delete me
     std::set<int> test_2;
     void CreateTestingSet();
+    cv::Mat test_open_cv_matrix;
 
 protected:
     std::set<MapPoint*> mspMapPoints;

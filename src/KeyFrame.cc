@@ -23,6 +23,12 @@
 #include "orb_slam_2/ORBmatcher.h"
 #include<mutex>
 
+// Serialization to save/load keyframe
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
+#include "orb_slam_2/OpenCvSerialization.h"
+
 namespace ORB_SLAM2
 {
 
@@ -660,6 +666,410 @@ float KeyFrame::ComputeSceneMedianDepth(const int q)
     sort(vDepths.begin(),vDepths.end());
 
     return vDepths[(vDepths.size()-1)/q];
+}
+
+// Explicit template instantiation
+template void KeyFrame::save<boost::archive::binary_oarchive>(
+    boost::archive::binary_oarchive &,
+    const unsigned int) const;
+template void KeyFrame::load<boost::archive::binary_iarchive>(
+    boost::archive::binary_iarchive &,
+    const unsigned int);
+
+template<class Archive>
+void KeyFrame::save(Archive &ar, const unsigned int version) const
+{
+    // TODO check
+    /*if (mbBad)
+            return;*/
+    ar & nNextId;
+    ar & mnId;
+    ar & mnFrameId;
+
+    ar & mTimeStamp;
+
+    ar & mnGridCols;
+    ar & mnGridRows;
+    ar & mfGridElementWidthInv;
+    ar & mfGridElementHeightInv;
+
+    ar & mnTrackReferenceForFrame;
+    ar & mnFuseTargetForKF;
+
+    ar & mnBALocalForKF;
+    ar & mnBAFixedForKF;
+
+    ar & mnLoopQuery;
+    ar & mnLoopWords;
+    ar & mLoopScore;
+    ar & mnRelocQuery;
+    ar & mnRelocWords;
+    ar & mRelocScore;
+
+    ar & mTcwGBA;
+    ar & mTcwBefGBA;
+    ar & mnBAGlobalForKF;
+
+    ar & fx;
+    ar & fy;
+    ar & cx;
+    ar & cy;
+    ar & invfx;
+    ar & invfy;
+    ar & mbf;
+    ar & mb;
+    ar & mThDepth;
+
+    ar & N;
+
+    ar & mvKeys;
+    ar & mvKeysUn;
+    ar & mvuRight;
+    ar & mvDepth;
+    ar & mDescriptors;
+
+    // TODO (marco-tranzatto) What about BoW variables?
+    // mBowVec
+    // mFeatVec
+
+    ar & mTcp;
+
+    ar & mnScaleLevels;
+    ar & mfScaleFactor;
+    ar & mfLogScaleFactor;
+    ar & mvScaleFactors;
+    ar & mvLevelSigma2;
+    ar & mvInvLevelSigma2;
+
+    ar & mnMinX;
+    ar & mnMinY;
+    ar & mnMaxX;
+    ar & mnMaxY;
+    ar & mK;
+
+    ar & Tcw;
+    ar & Twc;
+    ar & Ow;
+
+    ar & Cw;
+
+    // mvpMapPoints: save each map point id
+    SerializerSaveId(ar, mvpMapPoints);
+
+    // TODO (marco-tranzatto) What about BoW variables?
+    // mpKeyFrameDB
+    // mpORBvocabulary
+
+    ar & mGrid;
+
+    // mConnectedKeyFrameWeights: save id and weight
+    SerializerSaveConnectedKeyFrameWeights(ar, mConnectedKeyFrameWeights);
+    // mvpOrderedConnectedKeyFrames: save id
+    SerializerSaveId(ar, mvpOrderedConnectedKeyFrames);
+    ar & mvOrderedWeights;
+
+    ar & mbFirstConnection;
+    // mpParent
+    SerializerSaveParent(ar, mpParent);
+    // mspChildrens: save id
+    SerializerSaveId(ar, mspChildrens);
+    // mspLoopEdges: save id
+    SerializerSaveId(ar, mspLoopEdges);
+
+    ar & mbNotErase;
+    ar & mbToBeErased;
+    ar & mbBad;
+
+    ar & mHalfBaseline;
+
+    // TODO and mpMap?!
+}
+
+template<class Archive>
+void KeyFrame::load(Archive &ar, const unsigned int version)
+{
+    int nItems;bool is_id = false;
+    bool has_parent = false;
+    long unsigned int t_nId;
+    int ConKfWeight = 0;
+
+    ar & nNextId;
+    ar & mnId;
+    ar & const_cast<long unsigned int &> (mnFrameId);
+
+    ar & const_cast<double &> (mTimeStamp);
+
+    ar & const_cast<int &> (mnGridCols);
+    ar & const_cast<int &> (mnGridRows);
+    ar & const_cast<float &> (mfGridElementWidthInv);
+    ar & const_cast<float &> (mfGridElementHeightInv);
+
+    ar & mnTrackReferenceForFrame;
+    ar & mnFuseTargetForKF;
+
+    ar & mnBALocalForKF;
+    ar & mnBAFixedForKF;
+
+    ar & mnLoopQuery;
+    ar & mnLoopWords;
+    ar & mLoopScore;
+    ar & mnRelocQuery;
+    ar & mnRelocWords;
+    ar & mRelocScore;
+
+    ar & mTcwGBA;
+    ar & mTcwBefGBA;
+    ar & mnBAGlobalForKF;
+
+    ar & const_cast<float &> (fx);
+    ar & const_cast<float &> (fy);
+    ar & const_cast<float &> (cx);
+    ar & const_cast<float &> (cy);
+    ar & const_cast<float &> (invfx);
+    ar & const_cast<float &> (invfy);
+    ar & const_cast<float &> (mbf);
+    ar & const_cast<float &> (mb);
+    ar & const_cast<float &> (mThDepth);
+
+    ar & const_cast<int &> (N);
+
+    ar & const_cast<std::vector<cv::KeyPoint> &> (mvKeys);
+    ar & const_cast<std::vector<cv::KeyPoint> &> (mvKeysUn);
+    ar & const_cast<std::vector<float> &> (mvuRight);
+    ar & const_cast<std::vector<float> &> (mvDepth);
+    ar & const_cast<cv::Mat &> (mDescriptors);
+
+    // TODO BoW?
+
+    ar & mTcp;
+
+    ar & const_cast<int &> (mnScaleLevels);
+    ar & const_cast<float &> (mfScaleFactor);
+    ar & const_cast<float &> (mfLogScaleFactor);
+    ar & const_cast<std::vector<float> &> (mvScaleFactors);
+    ar & const_cast<std::vector<float> &> (mvLevelSigma2);
+    ar & const_cast<std::vector<float> &> (mvInvLevelSigma2);
+
+    ar & const_cast<int &> (mnMinX);
+    ar & const_cast<int &> (mnMinY);
+    ar & const_cast<int &> (mnMaxX);
+    ar & const_cast<int &> (mnMaxY);
+    ar & const_cast<cv::Mat &> (mK);
+
+    ar & const_cast<cv::Mat &> (Tcw);
+    ar & const_cast<cv::Mat &> (Twc);
+    ar & const_cast<cv::Mat &> (Ow);
+
+    ar & const_cast<cv::Mat &> (Cw);
+
+    // mMapPoints_nId
+    //mvpMapPoints.resize(nItems); // TODO ncessary?
+    SerializerLoadId_nId(ar, &mMapPoints_nId);
+
+    // TODO BoW?
+    // mpKeyFrameDB?
+    // mpORBvocabulary?
+
+    ar & mGrid;
+
+    // mConnectedKeyFrameWeights_nId
+    SerializerLoadConnectedKeyFrameWeights_nId(ar,
+        &mConnectedKeyFrameWeights_nId);
+    // mvpOrderedConnectedKeyFrames_nId
+    SerializerLoadId_nId(ar, &mvpOrderedConnectedKeyFrames_nId);
+    // Load each mvOrderedWeights
+    ar & const_cast<std::vector<int> &>(mvOrderedWeights);
+
+    ar & const_cast<bool &> (mbFirstConnection);
+    // mParent_KfId_map
+    SerializerLoadParent_KfId(ar, &mParent_KfId_map);
+    // mChildrens_nId
+    SerializerLoadId_nId(ar, &mChildrens_nId);
+    // mLoopEdges_nId
+    SerializerLoadId_nId(ar, &mLoopEdges_nId);
+
+    ar & mbNotErase;
+    ar & mbToBeErased;
+    ar & mbBad;
+    ar & mHalfBaseline;
+}
+
+template<class Archive, class DataStr>
+void KeyFrame::SerializerSaveId(Archive &ar, const DataStr &container) const
+{
+    int numItems;
+    bool isId;
+    long unsigned int itemId;
+
+    numItems = container.size();
+    ar & numItems;
+    for (typename DataStr::const_iterator it = container.begin();
+         it != container.end();
+         ++it)
+    {
+        if (*it == NULL)
+        {
+            isId = false;
+            ar & isId;
+        }
+        else
+        {
+            isId = true;
+            ar & isId;
+            itemId =  (**it).mnId;
+            ar & itemId;
+        }
+    }
+}
+
+template<class Archive>
+void KeyFrame::SerializerSaveConnectedKeyFrameWeights(Archive &ar,
+    const std::map<KeyFrame*,int> &container) const
+{
+    int numItems;
+    bool isId;
+    long unsigned int itemId;
+    int conKfWeight;
+
+    numItems = container.size();
+    ar & numItems;
+
+    for(std::map<KeyFrame*,int>::const_iterator it = container.begin();
+        it != container.end();
+        ++it)
+    {
+        if(it->first == NULL)
+        {
+            isId = false;
+            ar & isId;
+        }
+        else
+        {
+            isId = true;
+            ar & isId;
+            itemId =  it->first->mnId;
+            ar & itemId;
+            conKfWeight = it->second;
+            ar & conKfWeight;
+        }
+    }
+}
+
+template<class Archive>
+void KeyFrame::SerializerSaveParent(Archive &ar,
+        const KeyFrame* const &container) const
+{
+    if (container)
+    {
+        bool hasParent = true;
+        ar & hasParent;
+        ar & container->mnId;
+    }
+    else
+    {
+        bool hasParent = false;
+        ar & hasParent;
+    }
+}
+
+template<class Archive, class DataStr>
+void KeyFrame::SerializerLoadId_nId(Archive &ar, DataStr* pContainer)
+{
+    int numItems;
+    bool isId;
+    long unsigned int itemId;
+    MapId mapId;
+
+    ar & numItems;
+    mvpMapPoints.resize(numItems);
+    int j=0;
+    for(int i = 0; i < numItems; i++)
+    {
+        ar & isId;
+        if(isId)
+        {
+            j++;
+            ar & itemId;
+            mapId.is_valid = true;
+            mapId.id= itemId;
+            (*pContainer)[i] = mapId;
+        }
+        else
+        {
+            mapId.is_valid = false;
+            mapId.id= 0;
+            (*pContainer)[i] = mapId;
+        }
+    }
+}
+
+template<class Archive>
+void KeyFrame::SerializerLoadConnectedKeyFrameWeights_nId(Archive &ar,
+    std::map<long unsigned int, int>* pContainer)
+{
+    int numItems;
+    bool isId;
+    long unsigned int itemId;
+    int conKfWeight;
+
+    ar & numItems;
+    for(int i = 0; i < numItems; ++i)
+    {
+        ar & isId;
+        if (isId)
+        {
+            ar & itemId;
+            ar & conKfWeight;
+            (*pContainer)[itemId] = conKfWeight;
+        }
+    }
+}
+
+template<class Archive>
+void KeyFrame::SerializerLoadParent_KfId(Archive &ar,
+    MapId *pContainer)
+{
+    bool hasParent;
+    ar & hasParent;
+    if (hasParent)
+    {
+        pContainer->is_valid = true;
+        ar & pContainer->id;
+    }
+    else
+    {
+        pContainer->is_valid = false;
+        pContainer->id = 0;
+    }
+}
+
+
+void KeyFrame::SetMapPoints(std::vector<MapPoint*> spMapPoints)
+{
+    // We assume the mMapPoints_nId list has been initialized and contains the Map point IDS
+    // With nid, Search the KeyFrame List and populate mvpMapPoints
+    long unsigned int id;
+    bool is_valid = false;
+    int j = 0;
+
+    for(std::map<long unsigned int,MapId>::iterator it = mMapPoints_nId.begin();
+        it != mMapPoints_nId.end();
+        j++,++it)
+    {
+        is_valid = it->second.is_valid;
+        if (!is_valid)
+        {
+            //j--;
+            //continue;
+            mvpMapPoints[j] = static_cast<MapPoint*>(NULL);
+        }
+        else
+        {
+            id = it->second.id;
+            mvpMapPoints[j] = spMapPoints[id];
+        }
+
+   }
 }
 
 } //namespace ORB_SLAM
