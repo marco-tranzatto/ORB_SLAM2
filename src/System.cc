@@ -25,6 +25,10 @@
 #include "orb_slam_2/System.h"
 #include "orb_slam_2/Converter.h"
 
+// Serialization for saving/loading map
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+
 namespace ORB_SLAM2
 {
 
@@ -486,6 +490,43 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
 {
     unique_lock<mutex> lock(mMutexState);
     return mTrackedKeyPointsUn;
+}
+
+void System::SaveMap(const string &filename)
+{
+    cout << "----------------- Testing saving map:" << filename << std::endl;
+
+    // testing TODO delete me!!!
+    mpMap->CreateTestingSet();
+
+    std::ofstream os(filename);
+    {
+        //::boost::archive::binary_oarchive oa(os, ::boost::archive::no_header);
+        boost::archive::binary_oarchive oa(os);
+        // Get Map Mutex
+        unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+        oa << mpMap;
+    }
+    cout << endl << "Map saved to " << filename << endl;
+
+    // testing TODO delete me!!!
+    LoadMap(filename);
+}
+
+void System::LoadMap(const string &filename)
+{
+    cout << "++++++++++++++ Testing loading map ++++++++++++ " << endl;
+
+    {
+        std::ifstream is(filename);
+        //boost::archive::binary_iarchive ia(is, boost::archive::no_header);
+        boost::archive::binary_iarchive ia(is);
+        // Get Map Mutex
+        unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
+        ia >> mpMap;
+    }
+
+    cout << endl << "Map loaded from " << filename << endl;
 }
 
 } //namespace ORB_SLAM

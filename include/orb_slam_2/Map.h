@@ -23,11 +23,14 @@
 
 #include "orb_slam_2/MapPoint.h"
 #include "orb_slam_2/KeyFrame.h"
+
 #include <set>
 
 #include <mutex>
 
-
+// Serialization for saving/loading map
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/serialization.hpp>
 
 namespace ORB_SLAM2
 {
@@ -66,6 +69,10 @@ public:
     // This avoid that two points are created simultaneously in separate threads (id conflict)
     std::mutex mMutexPointCreation;
 
+    // Testing todo delete me
+    std::set<int> test_2;
+    void CreateTestingSet();
+
 protected:
     std::set<MapPoint*> mspMapPoints;
     std::set<KeyFrame*> mspKeyFrames;
@@ -78,6 +85,26 @@ protected:
     int mnBigChangeIdx;
 
     std::mutex mMutexMap;
+
+private:
+    // Class serialization to save/load map
+    friend class boost::serialization::access;
+
+    // Save map to an archive
+    template<class Archive>
+    void save(Archive &ar, const unsigned int version) const;
+
+    // Load map from an archive
+    template<class Archive>
+    void load(Archive &ar, const unsigned int version);
+
+    // Allows splitting serialization in save and load
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+        boost::serialization::split_member(ar, *this, version);
+    }
+
 };
 
 } //namespace ORB_SLAM

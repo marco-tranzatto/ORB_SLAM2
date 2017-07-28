@@ -22,6 +22,11 @@
 
 #include<mutex>
 
+// Serialization for saving/loading map
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/serialization/set.hpp> // TODO delete me if you serialize set elem by elem
+
 namespace ORB_SLAM2
 {
 
@@ -128,6 +133,51 @@ void Map::clear()
     mnMaxKFid = 0;
     mvpReferenceMapPoints.clear();
     mvpKeyFrameOrigins.clear();
+}
+
+// Explicit template instantiation
+template void Map::save<boost::archive::binary_oarchive>(
+    boost::archive::binary_oarchive &,
+    const unsigned int) const;
+template void Map::load<boost::archive::binary_iarchive>(
+    boost::archive::binary_iarchive &,
+    const unsigned int);
+
+template<class Archive>
+void Map::save(Archive &ar, const unsigned int version) const
+{
+    // test boost set serialization todo delete me
+    ar & test_2;
+
+    cout << "Map::save, version: " << version << endl;
+}
+
+template<class Archive>
+void Map::load(Archive &ar, const unsigned int version)
+{
+    // read test data
+    cout << "Map::load, version: " << version << endl;
+
+    cout << "Testing set 2 after loading" << endl;
+    ar & test_2;
+    for (std::set<int>::iterator it=test_2.begin(); it!=test_2.end(); ++it)
+      cout << (*it) << ", ";
+
+    cout << endl;
+}
+
+void Map::CreateTestingSet()
+{
+    // create test data
+    for(int i = 0; i < 10; i++) {
+        test_2.insert(i);
+    }
+
+    cout << "Testing set 2 before saving" << endl;
+    for (std::set<int>::iterator it=test_2.begin(); it!=test_2.end(); ++it)
+      cout << (*it) << ", ";
+
+    cout << endl;
 }
 
 } //namespace ORB_SLAM
