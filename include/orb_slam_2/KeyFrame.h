@@ -284,12 +284,12 @@ private:
         MapId *pContainer);
 
     // Helping variables for loading an existing map
-    std::map<long unsigned int, MapId> mMapPoints_nId;
+    std::map<long unsigned int, MapId> mvpMapPoints_nId;
     std::map<long unsigned int, int> mConnectedKeyFrameWeights_nId;
     std::map<long unsigned int, MapId> mvpOrderedConnectedKeyFrames_nId;
     MapId mParent_KfId_map;
-    std::map<long unsigned int, MapId> mChildrens_nId;
-    std::map<long unsigned int, MapId> mLoopEdges_nId;
+    std::map<long unsigned int, MapId> mspChildrens_nId;
+    std::map<long unsigned int, MapId> mspLoopEdges_nId;
 
 };
 

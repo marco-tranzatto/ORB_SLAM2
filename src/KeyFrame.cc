@@ -862,9 +862,9 @@ void KeyFrame::load(Archive &ar, const unsigned int version)
 
     ar & const_cast<cv::Mat &> (Cw);
 
-    // mMapPoints_nId
+    // mvpMapPoints_nId
     //mvpMapPoints.resize(nItems); // TODO ncessary?
-    SerializerLoadId_nId(ar, &mMapPoints_nId);
+    SerializerLoadId_nId(ar, &mvpMapPoints_nId);
 
     // TODO BoW?
     // mpKeyFrameDB?
@@ -883,10 +883,10 @@ void KeyFrame::load(Archive &ar, const unsigned int version)
     ar & const_cast<bool &> (mbFirstConnection);
     // mParent_KfId_map
     SerializerLoadParent_KfId(ar, &mParent_KfId_map);
-    // mChildrens_nId
-    SerializerLoadId_nId(ar, &mChildrens_nId);
-    // mLoopEdges_nId
-    SerializerLoadId_nId(ar, &mLoopEdges_nId);
+    // mspChildrens_nId
+    SerializerLoadId_nId(ar, &mspChildrens_nId);
+    // mspLoopEdges_nId
+    SerializerLoadId_nId(ar, &mspLoopEdges_nId);
 
     ar & mbNotErase;
     ar & mbToBeErased;
@@ -1046,14 +1046,14 @@ void KeyFrame::SerializerLoadParent_KfId(Archive &ar,
 
 void KeyFrame::SetMapPoints(std::vector<MapPoint*> spMapPoints)
 {
-    // We assume the mMapPoints_nId list has been initialized and contains the Map point IDS
+    // We assume the mvpMapPoints_nId list has been initialized and contains the Map point IDS
     // With nid, Search the KeyFrame List and populate mvpMapPoints
     long unsigned int id;
     bool is_valid = false;
     int j = 0;
 
-    for(std::map<long unsigned int,MapId>::iterator it = mMapPoints_nId.begin();
-        it != mMapPoints_nId.end();
+    for(std::map<long unsigned int,MapId>::iterator it = mvpMapPoints_nId.begin();
+        it != mvpMapPoints_nId.end();
         j++,++it)
     {
         is_valid = it->second.is_valid;
