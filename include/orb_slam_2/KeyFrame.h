@@ -283,7 +283,7 @@ private:
     void SerializerLoadParent_KfId(Archive &ar,
         MapId *pContainer);
 
-    // Helping variables for loading an existing map
+    // Helping variables for loading an existing keyframe
     std::map<long unsigned int, MapId> mvpMapPoints_nId;
     std::map<long unsigned int, int> mConnectedKeyFrameWeights_nId;
     std::map<long unsigned int, MapId> mvpOrderedConnectedKeyFrames_nId;

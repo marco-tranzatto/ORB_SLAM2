@@ -73,7 +73,7 @@ KeyFrame::KeyFrame():
     mnMinX(0), mnMinY(0), mnMaxX(0),
     mnMaxY(0)
 {
-    // Default serializing Constructor
+    // Default Constructor to allow class serialization load/save
 }
 
 void KeyFrame::ComputeBoW()
