@@ -23,6 +23,11 @@
 
 #include<mutex>
 
+// Serialization to save/load map point
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include "orb_slam_2/OpenCvSerialization.h"
+
 namespace ORB_SLAM2
 {
 
@@ -69,6 +74,15 @@ MapPoint::MapPoint(const cv::Mat &Pos, Map* pMap, Frame* pFrame, const int &idxF
     unique_lock<mutex> lock(mpMap->mMutexPointCreation);
     mnId=nNextId++;
 }
+
+MapPoint::MapPoint():
+    nObs(0), mnTrackReferenceForFrame(0),
+    mnLastFrameSeen(0), mnBALocalForKF(0), mnFuseCandidateForKF(0), mnLoopPointForKF(0), mnCorrectedByKF(0),
+    mnCorrectedReference(0), mnBAGlobalForKF(0),mnVisible(1), mnFound(1), mbBad(false),
+    mpReplaced(static_cast<MapPoint*>(NULL)), mfMinDistance(0), mfMaxDistance(0)
+ {
+    // Default Constructor to allow class serialization load/save
+ }
 
 void MapPoint::SetWorldPos(const cv::Mat &Pos)
 {
@@ -416,6 +430,259 @@ int MapPoint::PredictScale(const float &currentDist, Frame* pF)
     return nScale;
 }
 
+// Explicit template instantiation
+template void MapPoint::save<boost::archive::binary_oarchive>(
+    boost::archive::binary_oarchive &,
+    const unsigned int) const;
+template void MapPoint::load<boost::archive::binary_iarchive>(
+    boost::archive::binary_iarchive &,
+    const unsigned int);
 
+template<class Archive>
+void MapPoint::save(Archive &ar, const unsigned int version) const
+{
+    // TODO check
+    /*if (mbBad)
+            return;*/
+
+    ar & mnId;
+    ar & nNextId;
+    ar & mnFirstKFid;
+    ar & mnFirstFrame;
+    ar & nObs;
+
+    ar & mTrackProjX;
+    ar & mTrackProjY;
+    ar & mTrackProjXR;
+    ar & mbTrackInView;
+    ar & mnTrackScaleLevel;
+    ar & mTrackViewCos;
+    ar & mnTrackReferenceForFrame;
+    ar & mnLastFrameSeen;
+
+    ar & mnBALocalForKF;
+    ar & mnFuseCandidateForKF;
+
+    ar & mnLoopPointForKF;
+    ar & mnCorrectedByKF;
+    ar & mnCorrectedReference;
+    ar & mPosGBA;
+    ar & mnBAGlobalForKF;
+
+    ar & mWorldPos;
+
+    // Save each KF point id
+    SerializerSaveObservationId(ar, mObservations);
+
+    ar & mNormalVector;
+
+    ar & mDescriptor;
+
+    // mpRefKF
+    SerializerSaveReferenceKeyframeId(ar, mpRefKF);
+
+    ar & mnVisible;
+    ar & mnFound;
+
+    ar & mbBad;
+
+    ar & mfMinDistance;
+    ar & mfMaxDistance;
+}
+
+template<class Archive>
+void MapPoint::load(Archive &ar, const unsigned int version)
+{
+    ar & mnId;
+    ar & nNextId;
+    ar & mnFirstKFid;
+    ar & mnFirstFrame;
+    ar & nObs;
+
+    ar & mTrackProjX;
+    ar & mTrackProjY;
+    ar & mTrackProjXR;
+    ar & mbTrackInView;
+    ar & mnTrackScaleLevel;
+    ar & mTrackViewCos;
+    ar & mnTrackReferenceForFrame;
+    ar & mnLastFrameSeen;
+
+    ar & mnBALocalForKF;
+    ar & mnFuseCandidateForKF;
+
+    ar & mnLoopPointForKF;
+    ar & mnCorrectedByKF;
+    ar & mnCorrectedReference;
+    ar & mPosGBA;
+    ar & mnBAGlobalForKF;
+
+    ar & mWorldPos;
+
+    // Load each map point id
+    SerializerLoadObservation_nId(ar, &mObservations_nId);
+
+    ar & mNormalVector;
+
+    ar & mDescriptor;
+
+    // mpRefKF
+    SerializerLoadKeyframe_pair(ar, &mref_KfId_pair);
+
+    ar & mnVisible;
+    ar & mnFound;
+
+    ar & mbBad;
+
+    ar & mfMinDistance;
+    ar & mfMaxDistance;
+}
+
+template<class Archive, class DataStr>
+    void MapPoint::SerializerSaveObservationId(Archive &ar,
+        const DataStr &container) const
+{
+    int numItems;
+    bool isId;
+    long unsigned int itemId;
+    size_t tSize;
+
+    numItems = container.size();
+    ar & numItems;
+
+    for (typename DataStr::const_iterator it = container.begin();
+        it != container.end(); ++it)
+    {
+        if (it->first == NULL)
+        {
+            cout << "{INFO}Map POint Save - Empty observation " << mnId << endl;
+
+            isId = false;
+            ar & isId;
+        }
+        else
+        {
+            isId = true;
+            ar & isId;
+            itemId =  it->first->mnId;
+            ar & itemId;
+            tSize = it->second;
+            ar & tSize;
+        }
+    }
+}
+
+template<class Archive, class DataStr>
+    void MapPoint::SerializerSaveReferenceKeyframeId(Archive &ar,
+        const DataStr &container) const
+{
+    if (container)
+    {
+        bool isValid = true;
+        ar & isValid;
+        ar & container->mnId;
+    }
+    else
+    {
+        bool isValid = false;
+        ar & isValid;
+    }
+}
+
+template<class Archive, class DataStr>
+    void MapPoint::SerializerLoadObservation_nId(Archive &ar,
+        DataStr* pContainer)
+{
+    int numItems;
+    bool isId;
+    long unsigned int itemId;
+    size_t tSize;
+
+    ar & numItems;
+    for (int i = 0; i < numItems; ++i)
+    {
+        ar & isId;
+        if (isId)
+        {
+            ar & itemId;
+            ar & tSize;
+            (*pContainer)[itemId] = tSize;
+        }
+   }
+}
+
+template<class Archive, class DataStr>
+    void MapPoint::SerializerLoadKeyframe_pair(Archive &ar,
+        DataStr* pContainer)
+{
+    bool isValid;
+    long unsigned int itemId;
+
+    ar & isValid;
+    if (isValid)
+    {
+        ar & itemId;
+    }
+    else
+    {
+        itemId = 0;
+    }
+
+    (*pContainer) = std::make_pair(itemId, isValid);
+}
+
+void MapPoint::SetMap(Map* map)
+{
+    mpMap = map;
+}
+
+void MapPoint::SetObservations(std::vector<KeyFrame*> spKeyFrames)
+{
+    long unsigned int id;
+    long unsigned int kfRef_id;
+    size_t size;
+    int j = 0;
+    bool foundReference = false;
+    kfRef_id = mref_KfId_pair.first;
+    bool isRefvalid = mref_KfId_pair.second;
+
+    for (map<long unsigned int, size_t>::iterator it = mObservations_nId.begin();
+        it != mObservations_nId.end(); j++,++it)
+    {
+        id = it->first;
+        size = it->second;
+        {
+            bool foundKeyframe = false;
+            for(std::vector<KeyFrame*>::iterator mit=spKeyFrames.begin();
+                mit !=spKeyFrames.end() && !foundKeyframe; ++mit)
+            {
+                KeyFrame* pKf = *mit;
+                if(id == pKf->mnId)
+                {
+                    mObservations[pKf] = size;
+                    foundKeyframe = true;
+                }
+            }
+        }
+    }
+
+    for(std::vector<KeyFrame*>::iterator mit=spKeyFrames.begin();
+        mit !=spKeyFrames.end(); mit++)
+    {
+       KeyFrame* pKf = *mit;
+       if (isRefvalid && kfRef_id == pKf->mnId )
+       {
+            // Set the refernce Keyframe
+            mpRefKF = pKf;
+            foundReference = true;
+       }
+   }
+
+    if (!foundReference)
+    {
+        mpRefKF = static_cast<KeyFrame*>(NULL);
+        cout << "refernce KF - " << kfRef_id << "is not found for mappoint " << mnId << endl;
+    }
+}
 
 } //namespace ORB_SLAM

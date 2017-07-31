@@ -113,8 +113,10 @@ public:
     void SaveTrajectoryKITTI(const string &filename);
 
     // Save/Load functions
-    void SaveMap(const string &filename);
-    void LoadMap(const string &filename);
+    void SaveMap(const string &filename, bool *pSuccess,
+                 string *pMessage);
+    void LoadMap(const string &filename, bool *pSuccess,
+                 string *pMessage);
 
     // Information from most recent processed frame
     // You can call this right after TrackMonocular (or stereo or RGBD)

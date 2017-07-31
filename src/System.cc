@@ -492,7 +492,8 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
     return mTrackedKeyPointsUn;
 }
 
-void System::SaveMap(const string &filename)
+void System::SaveMap(const string &filename, bool *pSuccess,
+                     string *pMessage)
 {
     cout << "----------------- Testing saving map:" << filename << std::endl;
 
@@ -509,11 +510,18 @@ void System::SaveMap(const string &filename)
     }
     cout << endl << "Map saved to " << filename << endl;
 
+    // TODO how to report feedback from function caller?
+    *pSuccess = true;
+    *pMessage = "TODO";
+
     // testing TODO delete me!!!
-    LoadMap(filename);
+    bool test_bool;
+    string test_string;
+    LoadMap(filename, &test_bool, &test_string);
 }
 
-void System::LoadMap(const string &filename)
+void System::LoadMap(const string &filename, bool *pSuccess,
+                     string *pMessage)
 {
     cout << "++++++++++++++ Testing loading map ++++++++++++ " << endl;
 
@@ -527,6 +535,10 @@ void System::LoadMap(const string &filename)
     }
 
     cout << endl << "Map loaded from " << filename << endl;
+
+    // TODO how to report feedback from function caller?
+    *pSuccess = true;
+    *pMessage = "TODO";
 }
 
 } //namespace ORB_SLAM

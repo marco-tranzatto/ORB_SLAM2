@@ -28,6 +28,10 @@
 #include<opencv2/core/core.hpp>
 #include<mutex>
 
+// Serialization to save/load mapoint
+#include <boost/serialization/split_member.hpp>
+#include <boost/serialization/serialization.hpp>
+
 namespace ORB_SLAM2
 {
 
@@ -41,6 +45,7 @@ class MapPoint
 public:
     MapPoint(const cv::Mat &Pos, KeyFrame* pRefKF, Map* pMap);
     MapPoint(const cv::Mat &Pos,  Map* pMap, Frame* pFrame, const int &idxF);
+    MapPoint(); // needed for serialization
 
     void SetWorldPos(const cv::Mat &Pos);
     cv::Mat GetWorldPos();
@@ -80,6 +85,10 @@ public:
     float GetMaxDistanceInvariance();
     int PredictScale(const float &currentDist, KeyFrame*pKF);
     int PredictScale(const float &currentDist, Frame* pF);
+
+    // Helpers to load an existing map
+    void SetMap(Map* map);
+    void SetObservations(std::vector<KeyFrame*>);
 
 public:
     long unsigned int mnId;
@@ -145,6 +154,47 @@ protected:
 
      std::mutex mMutexPos;
      std::mutex mMutexFeatures;
+
+private:
+    // Class serialization to save/load map point
+    friend class boost::serialization::access;
+
+    // Save map point to an archive
+    template<class Archive>
+    void save(Archive &ar, const unsigned int version) const;
+
+    // Load map point from an archive
+    template<class Archive>
+    void load(Archive &ar, const unsigned int version);
+
+    // Allows splitting serialization in save and load
+    template<class Archive>
+    void serialize(Archive &ar, const unsigned int version)
+    {
+        boost::serialization::split_member(ar, *this, version);
+    }
+
+    // Helpers to save id from data structures
+    template<class Archive, class DataStr>
+    void SerializerSaveObservationId(Archive &ar,
+        const DataStr &container) const;
+    template<class Archive, class DataStr>
+    void SerializerSaveReferenceKeyframeId(Archive &ar,
+        const DataStr &container) const;
+
+    // Helpers to load id from data structures
+    template<class Archive, class DataStr>
+    void SerializerLoadObservation_nId(Archive &ar,
+        DataStr* pContainer);
+    template<class Archive, class DataStr>
+    void SerializerLoadKeyframe_pair(Archive &ar,
+        DataStr* pContainer);
+
+    // Helping variables for loading an existing map point
+    std::map<long unsigned int,size_t> mObservations_nId;
+    std::pair<long unsigned int,bool> mref_KfId_pair;
+
+
 };
 
 } //namespace ORB_SLAM

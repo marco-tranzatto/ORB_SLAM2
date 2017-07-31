@@ -26,6 +26,7 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/set.hpp>
+#include <boost/serialization/vector.hpp>
 #include "orb_slam_2/OpenCvSerialization.h" // Todo delete me
 
 namespace ORB_SLAM2
@@ -147,11 +148,21 @@ template void Map::load<boost::archive::binary_iarchive>(
 template<class Archive>
 void Map::save(Archive &ar, const unsigned int version) const
 {
-    int nItems;
+    // mspMapPoints
+    cout << "Saving mspMapPoints, size = " << mspMapPoints.size() << endl;
+    ar & mspMapPoints;
 
     // mspKeyFrames
     cout << "Saving mspKeyFrames, size = " << mspKeyFrames.size() << endl;
     ar & mspKeyFrames;
+
+    // mvpKeyFrameOrigins
+    cout << "Saving mvpKeyFrameOrigins, size = " << mvpKeyFrameOrigins.size() << endl;
+    ar & mvpKeyFrameOrigins;
+
+    // mnMaxKFid
+    cout << "Saving mnMaxKFid: " << mnMaxKFid << endl;
+    ar & mnMaxKFid;
 
     /*nItems = mspKeyFrames.size();
     cout << "{INFO}mspKeyFrames size = " << nItems << endl;
@@ -171,10 +182,26 @@ template<class Archive>
 void Map::load(Archive &ar, const unsigned int version)
 {
     // TODO USE CLASS ACTUAL VARIABLE MEMBERS!!!
+    std::set<MapPoint*> tmp_mspMapPoints;
     std::set<KeyFrame*> tmp_mspKeyFrames;
+    vector<KeyFrame*> tmp_mvpKeyFrameOrigins;
+    long unsigned int tmp_mnMaxKFid;
+
+    // mspMapPoints
+    ar & tmp_mspMapPoints;
+    cout << "Loaded tmp_mspMapPoints, size = " << tmp_mspMapPoints.size() << endl;
+
     // mspKeyFrames
     ar & tmp_mspKeyFrames;
     cout << "Loaded tmp_mspKeyFrames, size = " << tmp_mspKeyFrames.size() << endl;
+
+    // mvpKeyFrameOrigins
+    ar & tmp_mvpKeyFrameOrigins;
+    cout << "Loaded tmp_mvpKeyFrameOrigins, size = " << tmp_mvpKeyFrameOrigins.size() << endl;
+
+    // mnMaxKFid
+    ar & tmp_mnMaxKFid;
+    cout << "Loaded tmp_mnMaxKFid: " << tmp_mnMaxKFid << endl;
 
     // read test data
     /*std::set<int> new_test_2;
