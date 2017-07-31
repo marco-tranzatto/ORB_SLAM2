@@ -33,7 +33,8 @@ namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-               const bool bUseViewer):mSensor(sensor), mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
+               const bool bUseViewer, const bool loadExistingMap, const string &loadMapFilePath):mSensor(sensor),
+        mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
         mbDeactivateLocalizationMode(false)
 {
     // Output welcome message
@@ -79,6 +80,19 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     //Create the Map
     mpMap = new Map();
+    if(loadExistingMap)
+    {
+        cout << endl << "An existing map is going to be loaded." << endl;
+        // TODO check me, should we force localization only?!
+        ActivateLocalizationMode();
+        cout << endl << "Forcing mbActivateLocalizationMode = true" << endl;
+        // end TODO
+        LoadMap(loadMapFilePath);
+    }
+    else
+    {
+        cout << endl << "A new map is going to created online." << endl;
+    }
 
     //Create Drawers. These are used by the Viewer
     mpFrameDrawer = new FrameDrawer(mpMap);
@@ -495,7 +509,7 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
 void System::SaveMap(const string &filename, bool *pSuccess,
                      string *pMessage)
 {
-    cout << "----------------- Testing saving map:" << filename << std::endl;
+    cout << "----------------- Testing saving map to:" << filename << std::endl;
 
     // testing TODO delete me!!!
     //mpMap->CreateTestingSet();
@@ -513,17 +527,11 @@ void System::SaveMap(const string &filename, bool *pSuccess,
     // TODO how to report feedback from function caller?
     *pSuccess = true;
     *pMessage = "TODO";
-
-    // testing TODO delete me!!!
-    bool test_bool;
-    string test_string;
-    LoadMap(filename, &test_bool, &test_string);
 }
 
-void System::LoadMap(const string &filename, bool *pSuccess,
-                     string *pMessage)
+void System::LoadMap(const string &filename)
 {
-    cout << "++++++++++++++ Testing loading map ++++++++++++ " << endl;
+    cout << "++++++++++++++ Testing loading map form: " << filename << endl;
 
     {
         std::ifstream is(filename);
@@ -536,9 +544,60 @@ void System::LoadMap(const string &filename, bool *pSuccess,
 
     cout << endl << "Map loaded from " << filename << endl;
 
-    // TODO how to report feedback from function caller?
-    *pSuccess = true;
-    *pMessage = "TODO";
+    // Sorting
+    std::vector<MapPoint*> MapPointPtr = mpMap->GetAllMapPoints();
+    unsigned int max_id = 0;
+    for(std::vector<MapPoint*>::iterator mit=MapPointPtr.begin();
+        mit !=MapPointPtr.end(); mit++)
+    {
+        if ((*mit)->mnId > max_id)
+        {
+            max_id = (*mit)->mnId;
+        }
+    }
+
+    std::vector<MapPoint*> sortedPtr;
+
+    for(unsigned int i=0; i <= max_id; i++)
+    {
+        sortedPtr.push_back(NULL);
+    }
+
+    unsigned id;
+    for(std::vector<MapPoint*>::iterator mit=MapPointPtr.begin();
+        mit !=MapPointPtr.end(); mit++)
+    {
+        id = (*mit)->mnId;
+        sortedPtr[id] = *mit;
+    }
+
+    vector<ORB_SLAM2::KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+    for(vector<ORB_SLAM2::KeyFrame*>::iterator it = vpKFs.begin();
+        it != vpKFs.end(); ++it)
+    {
+        (*it)->SetKeyFrameDatabase(mpKeyFrameDatabase);
+        (*it)->SetORBvocabulary(mpVocabulary);
+        (*it)->SetMap(mpMap);
+        (*it)->ComputeBoW();
+        mpKeyFrameDatabase->add(*it);
+        (*it)->SetMapPoints(sortedPtr);
+        (*it)->SetSpanningTree(vpKFs);
+        (*it)->SetGridParams(vpKFs);
+    }
+
+    vector<ORB_SLAM2::MapPoint*> vpMPs = mpMap->GetAllMapPoints();
+    for(vector<ORB_SLAM2::MapPoint*>::iterator mit = vpMPs.begin();
+        mit != vpMPs.end(); ++mit)
+    {
+        (*mit)->SetMap(mpMap);
+        (*mit)->SetObservations(vpKFs);
+    }
+
+    for(vector<ORB_SLAM2::KeyFrame*>::iterator it = vpKFs.begin();
+        it != vpKFs.end(); ++it)
+    {
+        (*it)->UpdateConnections();
+    }
 }
 
 } //namespace ORB_SLAM

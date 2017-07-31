@@ -59,7 +59,10 @@ public:
 public:
 
     // Initialize the SLAM system. It launches the Local Mapping, Loop Closing and Viewer threads.
-    System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor, const bool bUseViewer = true);
+    System(const string &strVocFile, const string &strSettingsFile,
+           const eSensor sensor, const bool bUseViewer = true,
+           const bool loadExistingMap = false,
+           const string &loadMapFilePath = "map.bin");
 
     // Proccess the given stereo frame. Images must be synchronized and rectified.
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
@@ -115,8 +118,7 @@ public:
     // Save/Load functions
     void SaveMap(const string &filename, bool *pSuccess,
                  string *pMessage);
-    void LoadMap(const string &filename, bool *pSuccess,
-                 string *pMessage);
+    void LoadMap(const string &filename);
 
     // Information from most recent processed frame
     // You can call this right after TrackMonocular (or stereo or RGBD)

@@ -127,7 +127,12 @@ public:
     }
 
     // Setters for map reusing
+    void SetMap(Map* map);
+    void SetKeyFrameDatabase(KeyFrameDatabase* pKeyFrameDB);
+    void SetORBvocabulary(ORBVocabulary* pORBvocabulary);
     void SetMapPoints(std::vector<MapPoint*> spMapPoints);
+    void SetSpanningTree(std::vector<KeyFrame*> vpKeyFrames);
+    void SetGridParams(std::vector<KeyFrame*> vpKeyFrames);
 
 
     // The following variables are accesed from only 1 thread or never change (no mutex needed).

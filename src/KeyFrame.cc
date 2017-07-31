@@ -697,7 +697,7 @@ void KeyFrame::save(Archive &ar, const unsigned int version) const
     /*if (mbBad)
             return;*/
     // TODO delete me
-    cout << "KeyFrame::save." << endl;
+    //cout << "KeyFrame::save." << endl;
 
     ar & nNextId;
     ar & mnId;
@@ -802,18 +802,18 @@ void KeyFrame::save(Archive &ar, const unsigned int version) const
     // TODO and mpMap?!
 
     // TODO delete me
-    unsigned int test_data = 55;
+    /*unsigned int test_data = 55;
     ar & test_data;
 
     // TODO delete me
-    cout << "End KeyFrame::save." << endl;
+    cout << "End KeyFrame::save." << endl;*/
 }
 
 template<class Archive>
 void KeyFrame::load(Archive &ar, const unsigned int version)
 {
     // TODO delete me
-    cout << "KeyFrame::load." << endl;
+    //cout << "KeyFrame::load." << endl;
 
     int nItems;bool is_id = false;
     bool has_parent = false;
@@ -921,12 +921,12 @@ void KeyFrame::load(Archive &ar, const unsigned int version)
     ar & mHalfBaseline;
 
     // TODO delete me
-    unsigned int test_data ;
+    /*unsigned int test_data ;
     ar & test_data;
     cout << "KeyFrame::load, test_data: " << test_data << endl;
 
     // TODO delete me
-    cout << "End KeyFrame::load." << endl;
+    cout << "End KeyFrame::load." << endl;*/
 }
 
 template<class Archive, class DataStr>
@@ -1078,11 +1078,26 @@ void KeyFrame::SerializerLoadParent_KfId(Archive &ar,
     }
 }
 
+void KeyFrame::SetMap(Map* map)
+{
+    mpMap = map;
+}
+
+void KeyFrame::SetKeyFrameDatabase(KeyFrameDatabase* pKeyFrameDB)
+{
+    mpKeyFrameDB = pKeyFrameDB;
+}
+
+void KeyFrame::SetORBvocabulary(ORBVocabulary* pORBvocabulary)
+{
+    mpORBvocabulary = pORBvocabulary;
+}
 
 void KeyFrame::SetMapPoints(std::vector<MapPoint*> spMapPoints)
 {
     // We assume the mvpMapPoints_nId list has been initialized and contains the Map point IDS
     // With nid, Search the KeyFrame List and populate mvpMapPoints
+    // TODO check this assumption
     long unsigned int id;
     bool is_valid = false;
     int j = 0;
@@ -1103,8 +1118,179 @@ void KeyFrame::SetMapPoints(std::vector<MapPoint*> spMapPoints)
             id = it->second.id;
             mvpMapPoints[j] = spMapPoints[id];
         }
-
    }
+}
+
+void KeyFrame::SetSpanningTree(std::vector<KeyFrame*> vpKeyFrames)
+{
+    // We assume the mvpMapPoints_nId list has been initialized and contains the Map point IDS
+    // With nid, Search the KetFrame List and populate mvpMapPoints
+    // TODO check this assumption
+    long unsigned int id;
+    bool is_valid = false;
+    bool kf_found = false;
+    int j = 0;
+    int ctr = 0;
+
+    // Search Parent
+    if(mParent_KfId_map.is_valid)
+    {
+        for(std::vector<KeyFrame*>::iterator mit=vpKeyFrames.begin();
+            mit !=vpKeyFrames.end() && !kf_found; mit++)
+        {
+            KeyFrame* pKf = *mit;
+            id = pKf->mnId;
+            //if (mnId == 10 && 964 == id)
+            //cout << "[" << pMp->mnId <<"]";
+            if(id == mParent_KfId_map.id)
+            {
+                ctr++;
+                mpParent = pKf;
+                kf_found = true;
+            }
+        }
+
+        if(kf_found == false)
+        {
+            // cout << endl << "Parent KF [" << mparent_KfId_map.id <<"] not found for KF " << mnId << endl;
+            //mpParent = new KeyFrame();
+            //mpParent->mbBad = true;
+            mpParent = static_cast<KeyFrame*>(NULL);
+        }
+    }
+
+    // Search Child
+    kf_found = false;
+    j = 0;
+    ctr = 0;
+    is_valid = false;
+
+    for(std::map<long unsigned int,MapId>::iterator it = mspChildrens_nId.begin();
+        it != mspChildrens_nId.end();
+        j++,++it)
+    {
+        is_valid = it->second.is_valid;
+        if(is_valid)
+        {
+            id = it->second.id;
+            kf_found = false;
+            for(std::vector<KeyFrame*>::iterator mit=vpKeyFrames.begin();
+                mit !=vpKeyFrames.end() && !kf_found; mit++)
+            {
+                KeyFrame* pKf = *mit;
+                //if (mnId == 10 && 964 == id)
+                //cout << "[" << pMp->mnId <<"]";
+                if(id == pKf->mnId)
+                {
+                    ctr ++;
+                    mspChildrens.insert(pKf);
+                    kf_found = true;
+                }
+            }
+            if(kf_found == false)
+            {
+
+            }
+            // cout << endl << "Child [" << id <<"] not found for KF " << mnId << endl;
+        }
+    }
+
+    // Search Loop Edges
+    kf_found = false;
+    j = 0;
+    ctr = 0;
+    is_valid = false;
+
+    for(std::map<long unsigned int,MapId>::iterator it = mspLoopEdges_nId.begin();
+        it != mspLoopEdges_nId.end();
+        j++,++it)
+    {
+        is_valid = it->second.is_valid;
+
+        if(is_valid)
+        {
+            id = it->second.id;
+
+            kf_found = false;
+            for(std::vector<KeyFrame*>::iterator mit=vpKeyFrames.begin();
+                mit !=vpKeyFrames.end() && !kf_found; mit++)
+            {
+                KeyFrame* pKf = *mit;
+                if(id == pKf->mnId)
+                {
+                    ctr++;
+                    mspLoopEdges.insert(pKf);
+                    kf_found = true;
+                }
+            }
+            if(kf_found == false)
+            {
+            }
+                // cout << endl << "Loop Edge [" << id <<"] not found for KF " << mnId << endl;
+        }
+    }
+}
+
+void KeyFrame::SetGridParams(std::vector<KeyFrame*> vpKeyFrames)
+{
+    long unsigned int id;
+    int weight;
+    bool kf_found = false;
+    int j = 0;
+    int ctr = 0;
+    bool is_valid = false;
+
+    // Set up mConnectedKeyFrameWeights
+    for(map<long unsigned int, int>::iterator it = mConnectedKeyFrameWeights_nId.begin();
+        it != mConnectedKeyFrameWeights_nId.end();
+        j++,++it)
+    {
+        id = it->first;
+        weight = it->second;
+        {
+            for(std::vector<KeyFrame*>::iterator mit=vpKeyFrames.begin();
+                mit !=vpKeyFrames.end() && !kf_found; mit++)
+            {
+                KeyFrame* pKf = *mit;
+                if(id == pKf->mnId)
+                {
+                    mConnectedKeyFrameWeights[pKf] = weight;
+                    kf_found = true;
+                }
+            }
+        }
+    }
+
+    // Set up mvpOrderedConnectedKeyFrames
+    j = 0;
+    for(std::map<long unsigned int,MapId>::iterator it = mvpOrderedConnectedKeyFrames_nId.begin();
+        it != mvpOrderedConnectedKeyFrames_nId.end();
+        ++it)
+    {
+        is_valid = it->second.is_valid;
+        if(is_valid)
+        {
+            id = it->second.id;
+
+            kf_found = false;
+            for(std::vector<KeyFrame*>::iterator mit=vpKeyFrames.begin();
+                mit !=vpKeyFrames.end() && !kf_found; mit++)
+            {
+                KeyFrame* pKf = *mit;
+
+                if(id == pKf->mnId)
+                {
+                    ctr ++;
+                    mvpOrderedConnectedKeyFrames.push_back(pKf);
+                    kf_found = true;
+                }
+            }
+            if (kf_found == false)
+            {
+                //cout << "[" << id <<"] not found in KF " << mnId << endl;
+            }
+        }
+    }
 }
 
 } //namespace ORB_SLAM

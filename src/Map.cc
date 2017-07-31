@@ -181,27 +181,50 @@ void Map::save(Archive &ar, const unsigned int version) const
 template<class Archive>
 void Map::load(Archive &ar, const unsigned int version)
 {
+    // mspMapPoints
+    ar & mspMapPoints;
+    cout << "Loaded tmp_mspMapPoints, size = " << mspMapPoints.size() << endl;
+
+    cout << "Map::load. mspKeyFrames" << endl;// TODO delete me
+    // mspKeyFrames
+    ar & mspKeyFrames;
+    cout << "Loaded tmp_mspKeyFrames, size = " << mspKeyFrames.size() << endl;
+
+    cout << "Map::load. mvpKeyFrameOrigins" << endl;// TODO delete me
+    // mvpKeyFrameOrigins
+    ar & mvpKeyFrameOrigins;
+    cout << "Loaded tmp_mvpKeyFrameOrigins, size = " << mvpKeyFrameOrigins.size() << endl;
+
+    cout << "Map::load. mnMaxKFid" << endl;// TODO delete me
+    // mnMaxKFid
+    ar & mnMaxKFid;
+    cout << "Loaded tmp_mnMaxKFid: " << mnMaxKFid << endl;
+
     // TODO USE CLASS ACTUAL VARIABLE MEMBERS!!!
-    std::set<MapPoint*> tmp_mspMapPoints;
+    /*std::set<MapPoint*> tmp_mspMapPoints;
     std::set<KeyFrame*> tmp_mspKeyFrames;
     vector<KeyFrame*> tmp_mvpKeyFrameOrigins;
     long unsigned int tmp_mnMaxKFid;
 
+    cout << "Map::load. mspMapPoints" << endl;// TODO delete me
     // mspMapPoints
     ar & tmp_mspMapPoints;
     cout << "Loaded tmp_mspMapPoints, size = " << tmp_mspMapPoints.size() << endl;
 
+    cout << "Map::load. tmp_mspKeyFrames" << endl;// TODO delete me
     // mspKeyFrames
     ar & tmp_mspKeyFrames;
     cout << "Loaded tmp_mspKeyFrames, size = " << tmp_mspKeyFrames.size() << endl;
 
+    cout << "Map::load. mvpKeyFrameOrigins" << endl;// TODO delete me
     // mvpKeyFrameOrigins
     ar & tmp_mvpKeyFrameOrigins;
     cout << "Loaded tmp_mvpKeyFrameOrigins, size = " << tmp_mvpKeyFrameOrigins.size() << endl;
 
+    cout << "Map::load. mnMaxKFid" << endl;// TODO delete me
     // mnMaxKFid
     ar & tmp_mnMaxKFid;
-    cout << "Loaded tmp_mnMaxKFid: " << tmp_mnMaxKFid << endl;
+    cout << "Loaded tmp_mnMaxKFid: " << tmp_mnMaxKFid << endl;*/
 
     // read test data
     /*std::set<int> new_test_2;
