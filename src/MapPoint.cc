@@ -441,9 +441,11 @@ template void MapPoint::load<boost::archive::binary_iarchive>(
 template<class Archive>
 void MapPoint::save(Archive &ar, const unsigned int version) const
 {
-    // TODO check
-    /*if (mbBad)
-            return;*/
+    if(mbBad)
+    {
+        // Bad flag (we do not currently erase MapPoint from memory)
+        return;
+    }
 
     ar & mnId;
     ar & nNextId;
