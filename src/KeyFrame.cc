@@ -1018,7 +1018,8 @@ void KeyFrame::SerializerLoadId_nId(Archive &ar, DataStr* pContainer)
     MapId mapId;
 
     ar & numItems;
-    mvpMapPoints.resize(numItems);
+    //mvpMapPoints.resize(numItems); marco, why did you do this instead of using pContainer????
+    //pContainer->resize(numItems);
     int j=0;
     for(int i = 0; i < numItems; i++)
     {
@@ -1034,7 +1035,7 @@ void KeyFrame::SerializerLoadId_nId(Archive &ar, DataStr* pContainer)
         else
         {
             mapId.is_valid = false;
-            mapId.id= 0;
+            mapId.id = 0;
             (*pContainer)[i] = mapId;
         }
     }
@@ -1103,6 +1104,8 @@ void KeyFrame::SetMapPoints(std::vector<MapPoint*> spMapPoints)
     long unsigned int id;
     bool is_valid = false;
     int j = 0;
+
+    mvpMapPoints.resize(mvpMapPoints_nId.size()); // TODO added by marco-tranzatto
 
     for(std::map<long unsigned int,MapId>::iterator it = mvpMapPoints_nId.begin();
         it != mvpMapPoints_nId.end();

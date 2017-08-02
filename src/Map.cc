@@ -164,6 +164,11 @@ void Map::save(Archive &ar, const unsigned int version) const
     cout << "Saving mnMaxKFid: " << mnMaxKFid << endl;
     ar & mnMaxKFid;
 
+    // TODO delete me
+    unsigned int test_data = 0xdeadbeef;
+    ar & test_data;
+    // End TODO delete me
+
     /*nItems = mspKeyFrames.size();
     cout << "{INFO}mspKeyFrames size = " << nItems << endl;
     ar & nItems;
@@ -183,22 +188,35 @@ void Map::load(Archive &ar, const unsigned int version)
 {
     // mspMapPoints
     ar & mspMapPoints;
-    cout << "Loaded tmp_mspMapPoints, size = " << mspMapPoints.size() << endl;
+    cout << "Loaded mspMapPoints, size = " << mspMapPoints.size() << endl;
 
     cout << "Map::load. mspKeyFrames" << endl;// TODO delete me
     // mspKeyFrames
     ar & mspKeyFrames;
-    cout << "Loaded tmp_mspKeyFrames, size = " << mspKeyFrames.size() << endl;
+    cout << "Loaded mspKeyFrames, size = " << mspKeyFrames.size() << endl;
 
     cout << "Map::load. mvpKeyFrameOrigins" << endl;// TODO delete me
     // mvpKeyFrameOrigins
     ar & mvpKeyFrameOrigins;
-    cout << "Loaded tmp_mvpKeyFrameOrigins, size = " << mvpKeyFrameOrigins.size() << endl;
+    cout << "Loaded mvpKeyFrameOrigins, size = " << mvpKeyFrameOrigins.size() << endl;
 
     cout << "Map::load. mnMaxKFid" << endl;// TODO delete me
     // mnMaxKFid
     ar & mnMaxKFid;
-    cout << "Loaded tmp_mnMaxKFid: " << mnMaxKFid << endl;
+    cout << "Loaded mnMaxKFid: " << mnMaxKFid << endl;
+
+    // TODO delete me
+    unsigned int test_data;
+    ar & test_data;
+    if(test_data == 0xdeadbeef)
+    {
+        cout << "~~~~~~~~~~~~~~~~~~~~ Test data passed." << endl;
+    }
+    else
+    {
+        cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Test data !!!NOT!! passed!" << endl;
+    }
+    // End TODO delete me
 
     // TODO USE CLASS ACTUAL VARIABLE MEMBERS!!!
     /*std::set<MapPoint*> tmp_mspMapPoints;

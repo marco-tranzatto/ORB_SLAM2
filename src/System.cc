@@ -84,8 +84,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     {
         cout << endl << "An existing map is going to be loaded." << endl;
         // TODO check me, should we force localization only?!
-        ActivateLocalizationMode();
-        cout << endl << "Forcing mbActivateLocalizationMode = true" << endl;
+        //ActivateLocalizationMode();
+        //cout << endl << "Forcing mbActivateLocalizationMode = true" << endl;
         // end TODO
         LoadMap(loadMapFilePath);
     }
@@ -95,13 +95,13 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     }
 
     //Create Drawers. These are used by the Viewer
-    mpFrameDrawer = new FrameDrawer(mpMap);
+    mpFrameDrawer = new FrameDrawer(mpMap, loadExistingMap);
     mpMapDrawer = new MapDrawer(mpMap, strSettingsFile);
 
     //Initialize the Tracking thread
     //(it will live in the main thread of execution, the one that called this constructor)
     mpTracker = new Tracking(this, mpVocabulary, mpFrameDrawer, mpMapDrawer,
-                             mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor);
+                             mpMap, mpKeyFrameDatabase, strSettingsFile, mSensor, loadExistingMap);
 
     //Initialize the Local Mapping thread and launch
     mpLocalMapper = new LocalMapping(mpMap, mSensor==MONOCULAR);
@@ -114,7 +114,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Initialize the Viewer thread and launch
     if(bUseViewer)
     {
-        mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile);
+        mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile, loadExistingMap);
         mptViewer = new thread(&Viewer::Run, mpViewer);
         mpTracker->SetViewer(mpViewer);
     }
@@ -516,8 +516,8 @@ void System::SaveMap(const string &filename, bool *pSuccess,
 
     std::ofstream os(filename);
     {
-        //::boost::archive::binary_oarchive oa(os, ::boost::archive::no_header);
-        boost::archive::binary_oarchive oa(os);
+        boost::archive::binary_oarchive oa(os, boost::archive::no_header); // TODO check me
+        //boost::archive::binary_oarchive oa(os);
         // Get Map Mutex
         unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
         oa << mpMap;
@@ -535,8 +535,8 @@ void System::LoadMap(const string &filename)
 
     {
         std::ifstream is(filename);
-        //boost::archive::binary_iarchive ia(is, boost::archive::no_header);
-        boost::archive::binary_iarchive ia(is);
+        boost::archive::binary_iarchive ia(is, boost::archive::no_header); // TODO check me
+        //boost::archive::binary_iarchive ia(is);
         // Get Map Mutex
         unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
         ia >> mpMap;
@@ -555,6 +555,8 @@ void System::LoadMap(const string &filename)
             max_id = (*mit)->mnId;
         }
     }
+    cout << "size MapPointPtr: " << MapPointPtr.size() << endl;
+    cout << "max_id: " << max_id << endl;
 
     std::vector<MapPoint*> sortedPtr;
 
@@ -570,6 +572,7 @@ void System::LoadMap(const string &filename)
         id = (*mit)->mnId;
         sortedPtr[id] = *mit;
     }
+    cout << "size sortedPtr: " << sortedPtr.size() << endl;    
 
     vector<ORB_SLAM2::KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
     for(vector<ORB_SLAM2::KeyFrame*>::iterator it = vpKFs.begin();
@@ -584,6 +587,7 @@ void System::LoadMap(const string &filename)
         (*it)->SetSpanningTree(vpKFs);
         (*it)->SetGridParams(vpKFs);
     }
+    cout << "size vpKFs: " << vpKFs.size() << endl;
 
     vector<ORB_SLAM2::MapPoint*> vpMPs = mpMap->GetAllMapPoints();
     for(vector<ORB_SLAM2::MapPoint*>::iterator mit = vpMPs.begin();
@@ -592,6 +596,7 @@ void System::LoadMap(const string &filename)
         (*mit)->SetMap(mpMap);
         (*mit)->SetObservations(vpKFs);
     }
+    cout << "size vpMPs: " << vpMPs.size() << endl; 
 
     for(vector<ORB_SLAM2::KeyFrame*>::iterator it = vpKFs.begin();
         it != vpKFs.end(); ++it)
