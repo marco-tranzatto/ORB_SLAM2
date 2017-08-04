@@ -33,8 +33,8 @@ namespace ORB_SLAM2
 {
 
 System::System(const string &strVocFile, const string &strSettingsFile, const eSensor sensor,
-               const bool bUseViewer, const bool loadExistingMap, const string &loadMapFilePath):mSensor(sensor),
-        mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(false),
+               const bool bUseViewer, const bool loadExistingMap, const string &loadMapFilePath, const bool activateLocalizationMode):mSensor(sensor),
+        mpViewer(static_cast<Viewer*>(NULL)), mbReset(false),mbActivateLocalizationMode(activateLocalizationMode),
         mbDeactivateLocalizationMode(false)
 {
     // Output welcome message
@@ -114,7 +114,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     //Initialize the Viewer thread and launch
     if(bUseViewer)
     {
-        mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile, loadExistingMap);
+        mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile,mbActivateLocalizationMode);
         mptViewer = new thread(&Viewer::Run, mpViewer);
         mpTracker->SetViewer(mpViewer);
     }

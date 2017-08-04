@@ -26,9 +26,9 @@
 namespace ORB_SLAM2
 {
 
-Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking, const string &strSettingPath, const bool loadExistingMap):
+Viewer::Viewer(System* pSystem, FrameDrawer *pFrameDrawer, MapDrawer *pMapDrawer, Tracking *pTracking, const string &strSettingPath, const bool localizationMode):
     mpSystem(pSystem), mpFrameDrawer(pFrameDrawer),mpMapDrawer(pMapDrawer), mpTracker(pTracking),
-    mbFinishRequested(false), mbFinished(true), mbStopped(true), mbStopRequested(false), mbLoadExistingMap(loadExistingMap)
+    mbFinishRequested(false), mbFinished(true), mbStopped(true), mbStopRequested(false), mbLocalizationMode(localizationMode)
 {
     cv::FileStorage fSettings(strSettingPath, cv::FileStorage::READ);
 
@@ -70,7 +70,7 @@ void Viewer::Run()
     pangolin::Var<bool> menuShowPoints("menu.Show Points",true,true);
     pangolin::Var<bool> menuShowKeyFrames("menu.Show KeyFrames",true,true);
     pangolin::Var<bool> menuShowGraph("menu.Show Graph",true,true);
-    pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",mbLoadExistingMap,true);
+    pangolin::Var<bool> menuLocalizationMode("menu.Localization Mode",mbLocalizationMode,true);
     pangolin::Var<bool> menuReset("menu.Reset",false,false);
 
     // Define Camera Render Object (for view / scene browsing)
@@ -90,7 +90,6 @@ void Viewer::Run()
     cv::namedWindow("ORB-SLAM2: Current Frame");
 
     bool bFollow = true;
-    bool bLocalizationMode = mbLoadExistingMap;
 
     while(1)
     {
@@ -113,15 +112,15 @@ void Viewer::Run()
             bFollow = false;
         }
 
-        if(menuLocalizationMode && !bLocalizationMode)
+        if(menuLocalizationMode && !mbLocalizationMode)
         {
             mpSystem->ActivateLocalizationMode();
-            bLocalizationMode = true;
+            mbLocalizationMode = true;
         }
-        else if(!menuLocalizationMode && bLocalizationMode)
+        else if(!menuLocalizationMode && mbLocalizationMode)
         {
             mpSystem->DeactivateLocalizationMode();
-            bLocalizationMode = false;
+            mbLocalizationMode = false;
         }
 
         d_cam.Activate(s_cam);
@@ -144,9 +143,9 @@ void Viewer::Run()
             menuShowKeyFrames = true;
             menuShowPoints = true;
             menuLocalizationMode = false;
-            if(bLocalizationMode)
+            if(mbLocalizationMode)
                 mpSystem->DeactivateLocalizationMode();
-            bLocalizationMode = false;
+            mbLocalizationMode = false;
             bFollow = true;
             menuFollowCamera = true;
             mpSystem->Reset();

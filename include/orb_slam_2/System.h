@@ -62,7 +62,8 @@ public:
     System(const string &strVocFile, const string &strSettingsFile,
            const eSensor sensor, const bool bUseViewer = true,
            const bool loadExistingMap = false,
-           const string &loadMapFilePath = "map.bin");
+           const string &loadMapFilePath = "map.bin",
+           const bool activateLocalizationMode = false);
 
     // Proccess the given stereo frame. Images must be synchronized and rectified.
     // Input images: RGB (CV_8UC3) or grayscale (CV_8U). RGB is converted to grayscale.
