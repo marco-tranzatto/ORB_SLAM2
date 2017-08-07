@@ -544,7 +544,7 @@ void System::LoadMap(const string &filename)
     }
 
     std::vector<MapPoint*> sortedPtr;
-    sortedPtr.resize(max_id);
+    sortedPtr.resize(max_id + 1, NULL);
 
     unsigned id;
     for(std::vector<MapPoint*>::iterator mit=MapPointPtr.begin();
