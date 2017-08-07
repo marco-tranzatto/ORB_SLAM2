@@ -47,7 +47,7 @@ KeyFrame::KeyFrame(Frame &F, Map *pMap, KeyFrameDatabase *pKFDB):
     mvInvLevelSigma2(F.mvInvLevelSigma2), mnMinX(F.mnMinX), mnMinY(F.mnMinY), mnMaxX(F.mnMaxX),
     mnMaxY(F.mnMaxY), mK(F.mK), mvpMapPoints(F.mvpMapPoints), mpKeyFrameDB(pKFDB),
     mpORBvocabulary(F.mpORBvocabulary), mbFirstConnection(true), mpParent(NULL), mbNotErase(false),
-    mbToBeErased(false), mbBad(false), mHalfBaseline(F.mb/2), mpMap(pMap)
+    mbToBeErased(false), mbBad(false), mHalfBaseline(F.mb/2), mpMap(pMap), mbLoadedMapPoints_nId(false)
 {
     mnId=nNextId++;
 
@@ -71,7 +71,7 @@ KeyFrame::KeyFrame():
     mbf(0.0), mb(0.0), mThDepth(0.0), N(0), mnScaleLevels(0), mfScaleFactor(0),
     mfLogScaleFactor(0.0),
     mnMinX(0), mnMinY(0), mnMaxX(0),
-    mnMaxY(0)
+    mnMaxY(0), mbLoadedMapPoints_nId(false)
 {
     // Default Constructor to allow class serialization load/save
 }
@@ -695,11 +695,9 @@ void KeyFrame::save(Archive &ar, const unsigned int version) const
 {
     if(mbBad)
     {
-        // Bad flag (we do not currently erase MapPoint from memory)
+        // Bad flag. MapPoint are marked as "bad" but are not currently removed
         return;
     }
-    // TODO delete me
-    //cout << "KeyFrame::save." << endl;
 
     ar & nNextId;
     ar & mnId;
@@ -747,10 +745,6 @@ void KeyFrame::save(Archive &ar, const unsigned int version) const
     ar & mvDepth;
     ar & mDescriptors;
 
-    // TODO (marco-tranzatto) What about BoW variables?
-    // mBowVec
-    // mFeatVec
-
     ar & mTcp;
 
     ar & mnScaleLevels;
@@ -775,9 +769,8 @@ void KeyFrame::save(Archive &ar, const unsigned int version) const
     // mvpMapPoints: save each map point id
     SerializerSaveId(ar, mvpMapPoints);
 
-    // TODO (marco-tranzatto) What about BoW variables?
-    // mpKeyFrameDB
-    // mpORBvocabulary
+    // mpKeyFrameDB set with "SetKeyFrameDatabase", do not save it
+    // mpORBvocabulary set with "SetKeyFrameDatabase", do not save it
 
     ar & mGrid;
 
@@ -801,22 +794,12 @@ void KeyFrame::save(Archive &ar, const unsigned int version) const
 
     ar & mHalfBaseline;
 
-    // TODO and mpMap?!
-
-    // TODO delete me
-    /*unsigned int test_data = 55;
-    ar & test_data;
-
-    // TODO delete me
-    cout << "End KeyFrame::save." << endl;*/
+    // mpMap set with "SetMap", do not save it
 }
 
 template<class Archive>
 void KeyFrame::load(Archive &ar, const unsigned int version)
 {
-    // TODO delete me
-    //cout << "KeyFrame::load." << endl;
-
     int nItems;bool is_id = false;
     bool has_parent = false;
     long unsigned int t_nId;
@@ -868,8 +851,6 @@ void KeyFrame::load(Archive &ar, const unsigned int version)
     ar & const_cast<std::vector<float> &> (mvDepth);
     ar & const_cast<cv::Mat &> (mDescriptors);
 
-    // TODO BoW?
-
     ar & mTcp;
 
     ar & const_cast<int &> (mnScaleLevels);
@@ -892,12 +873,11 @@ void KeyFrame::load(Archive &ar, const unsigned int version)
     ar & const_cast<cv::Mat &> (Cw);
 
     // mvpMapPoints_nId
-    //mvpMapPoints.resize(nItems); // TODO ncessary?
     SerializerLoadId_nId(ar, &mvpMapPoints_nId);
+    mbLoadedMapPoints_nId = true;
 
-    // TODO BoW?
-    // mpKeyFrameDB?
-    // mpORBvocabulary?
+    // mpKeyFrameDB set with "SetKeyFrameDatabase"
+    // mpORBvocabulary set with "SetKeyFrameDatabase"
 
     ar & mGrid;
 
@@ -922,13 +902,7 @@ void KeyFrame::load(Archive &ar, const unsigned int version)
     ar & mbBad;
     ar & mHalfBaseline;
 
-    // TODO delete me
-    /*unsigned int test_data ;
-    ar & test_data;
-    cout << "KeyFrame::load, test_data: " << test_data << endl;
-
-    // TODO delete me
-    cout << "End KeyFrame::load." << endl;*/
+    // mpMap set with "SetMap", do not save it
 }
 
 template<class Archive, class DataStr>
@@ -940,11 +914,10 @@ void KeyFrame::SerializerSaveId(Archive &ar, const DataStr &container) const
 
     numItems = container.size();
     ar & numItems;
-    for (typename DataStr::const_iterator it = container.begin();
-         it != container.end();
-         ++it)
+    for(typename DataStr::const_iterator it = container.begin();
+        it != container.end(); ++it)
     {
-        if (*it == NULL)
+        if(*it == NULL)
         {
             isId = false;
             ar & isId;
@@ -963,7 +936,7 @@ template<class Archive>
 void KeyFrame::SerializerSaveConnectedKeyFrameWeights(Archive &ar,
     const std::map<KeyFrame*,int> &container) const
 {
-    int numItems;
+    unsigned int numItems;
     bool isId;
     long unsigned int itemId;
     int conKfWeight;
@@ -972,8 +945,7 @@ void KeyFrame::SerializerSaveConnectedKeyFrameWeights(Archive &ar,
     ar & numItems;
 
     for(std::map<KeyFrame*,int>::const_iterator it = container.begin();
-        it != container.end();
-        ++it)
+        it != container.end(); ++it)
     {
         if(it->first == NULL)
         {
@@ -984,7 +956,7 @@ void KeyFrame::SerializerSaveConnectedKeyFrameWeights(Archive &ar,
         {
             isId = true;
             ar & isId;
-            itemId =  it->first->mnId;
+            itemId = it->first->mnId;
             ar & itemId;
             conKfWeight = it->second;
             ar & conKfWeight;
@@ -996,7 +968,7 @@ template<class Archive>
 void KeyFrame::SerializerSaveParent(Archive &ar,
         const KeyFrame* const &container) const
 {
-    if (container)
+    if(container)
     {
         bool hasParent = true;
         ar & hasParent;
@@ -1012,21 +984,17 @@ void KeyFrame::SerializerSaveParent(Archive &ar,
 template<class Archive, class DataStr>
 void KeyFrame::SerializerLoadId_nId(Archive &ar, DataStr* pContainer)
 {
-    int numItems;
+    unsigned int numItems;
     bool isId;
     long unsigned int itemId;
     MapId mapId;
 
     ar & numItems;
-    //mvpMapPoints.resize(numItems); marco, why did you do this instead of using pContainer????
-    //pContainer->resize(numItems);
-    int j=0;
-    for(int i = 0; i < numItems; i++)
+    for(unsigned int i = 0; i < numItems; i++)
     {
         ar & isId;
         if(isId)
         {
-            j++;
             ar & itemId;
             mapId.is_valid = true;
             mapId.id= itemId;
@@ -1045,13 +1013,13 @@ template<class Archive>
 void KeyFrame::SerializerLoadConnectedKeyFrameWeights_nId(Archive &ar,
     std::map<long unsigned int, int>* pContainer)
 {
-    int numItems;
+    unsigned int numItems;
     bool isId;
     long unsigned int itemId;
     int conKfWeight;
 
     ar & numItems;
-    for(int i = 0; i < numItems; ++i)
+    for(unsigned int i = 0; i < numItems; ++i)
     {
         ar & isId;
         if (isId)
@@ -1100,56 +1068,44 @@ void KeyFrame::SetMapPoints(std::vector<MapPoint*> spMapPoints)
 {
     // We assume the mvpMapPoints_nId list has been initialized and contains the Map point IDS
     // With nid, Search the KeyFrame List and populate mvpMapPoints
-    // TODO check this assumption
-    long unsigned int id;
-    bool is_valid = false;
-    int j = 0;
-
-    mvpMapPoints.resize(mvpMapPoints_nId.size()); // TODO added by marco-tranzatto
-
-    for(std::map<long unsigned int,MapId>::iterator it = mvpMapPoints_nId.begin();
-        it != mvpMapPoints_nId.end();
-        j++,++it)
+    if(!mbLoadedMapPoints_nId)
     {
-        is_valid = it->second.is_valid;
-        if (!is_valid)
+        cerr <<
+            "SetMapPoints must be called after a map has been loaded and mvpMapPoints has been initialized" << endl;
+        exit(-1);
+    }
+
+    mvpMapPoints.resize(mvpMapPoints_nId.size());
+    int index_new_elem = 0;
+    for(std::map<long unsigned int,MapId>::iterator it = mvpMapPoints_nId.begin();
+        it != mvpMapPoints_nId.end(); ++it)
+    {
+        if(!(it->second.is_valid))
         {
-            //j--;
-            //continue;
-            mvpMapPoints[j] = static_cast<MapPoint*>(NULL);
+            mvpMapPoints[index_new_elem] = NULL;
         }
         else
         {
-            id = it->second.id;
-            mvpMapPoints[j] = spMapPoints[id];
+            mvpMapPoints[index_new_elem] = spMapPoints[it->second.id];
         }
+        index_new_elem++;
    }
 }
 
 void KeyFrame::SetSpanningTree(std::vector<KeyFrame*> vpKeyFrames)
 {
-    // We assume the mvpMapPoints_nId list has been initialized and contains the Map point IDS
-    // With nid, Search the KetFrame List and populate mvpMapPoints
-    // TODO check this assumption
     long unsigned int id;
-    bool is_valid = false;
     bool kf_found = false;
-    int j = 0;
-    int ctr = 0;
 
     // Search Parent
     if(mParent_KfId_map.is_valid)
     {
         for(std::vector<KeyFrame*>::iterator mit=vpKeyFrames.begin();
-            mit !=vpKeyFrames.end() && !kf_found; mit++)
+            mit !=vpKeyFrames.end() && !kf_found; ++mit)
         {
             KeyFrame* pKf = *mit;
-            id = pKf->mnId;
-            //if (mnId == 10 && 964 == id)
-            //cout << "[" << pMp->mnId <<"]";
-            if(id == mParent_KfId_map.id)
+            if(pKf->mnId == mParent_KfId_map.id)
             {
-                ctr++;
                 mpParent = pKf;
                 kf_found = true;
             }
@@ -1157,62 +1113,35 @@ void KeyFrame::SetSpanningTree(std::vector<KeyFrame*> vpKeyFrames)
 
         if(kf_found == false)
         {
-            // cout << endl << "Parent KF [" << mparent_KfId_map.id <<"] not found for KF " << mnId << endl;
-            //mpParent = new KeyFrame();
-            //mpParent->mbBad = true;
             mpParent = static_cast<KeyFrame*>(NULL);
         }
     }
 
     // Search Child
-    kf_found = false;
-    j = 0;
-    ctr = 0;
-    is_valid = false;
-
     for(std::map<long unsigned int,MapId>::iterator it = mspChildrens_nId.begin();
-        it != mspChildrens_nId.end();
-        j++,++it)
+        it != mspChildrens_nId.end(); ++it)
     {
-        is_valid = it->second.is_valid;
-        if(is_valid)
+        if(it->second.is_valid)
         {
-            id = it->second.id;
             kf_found = false;
             for(std::vector<KeyFrame*>::iterator mit=vpKeyFrames.begin();
-                mit !=vpKeyFrames.end() && !kf_found; mit++)
+                mit !=vpKeyFrames.end() && !kf_found; ++mit)
             {
                 KeyFrame* pKf = *mit;
-                //if (mnId == 10 && 964 == id)
-                //cout << "[" << pMp->mnId <<"]";
-                if(id == pKf->mnId)
+                if(it->second.id == pKf->mnId)
                 {
-                    ctr ++;
                     mspChildrens.insert(pKf);
                     kf_found = true;
                 }
             }
-            if(kf_found == false)
-            {
-
-            }
-            // cout << endl << "Child [" << id <<"] not found for KF " << mnId << endl;
         }
     }
 
     // Search Loop Edges
-    kf_found = false;
-    j = 0;
-    ctr = 0;
-    is_valid = false;
-
     for(std::map<long unsigned int,MapId>::iterator it = mspLoopEdges_nId.begin();
-        it != mspLoopEdges_nId.end();
-        j++,++it)
+        it != mspLoopEdges_nId.end(); ++it)
     {
-        is_valid = it->second.is_valid;
-
-        if(is_valid)
+        if(it->second.is_valid)
         {
             id = it->second.id;
 
@@ -1223,76 +1152,52 @@ void KeyFrame::SetSpanningTree(std::vector<KeyFrame*> vpKeyFrames)
                 KeyFrame* pKf = *mit;
                 if(id == pKf->mnId)
                 {
-                    ctr++;
                     mspLoopEdges.insert(pKf);
                     kf_found = true;
                 }
             }
-            if(kf_found == false)
-            {
-            }
-                // cout << endl << "Loop Edge [" << id <<"] not found for KF " << mnId << endl;
         }
     }
 }
 
 void KeyFrame::SetGridParams(std::vector<KeyFrame*> vpKeyFrames)
 {
-    long unsigned int id;
     int weight;
     bool kf_found = false;
-    int j = 0;
-    int ctr = 0;
-    bool is_valid = false;
 
     // Set up mConnectedKeyFrameWeights
-    for(map<long unsigned int, int>::iterator it = mConnectedKeyFrameWeights_nId.begin();
-        it != mConnectedKeyFrameWeights_nId.end();
-        j++,++it)
+    for(map<long unsigned int,int>::iterator it = mConnectedKeyFrameWeights_nId.begin();
+        it != mConnectedKeyFrameWeights_nId.end(); ++it)
     {
-        id = it->first;
-        weight = it->second;
+        for(std::vector<KeyFrame*>::iterator mit=vpKeyFrames.begin();
+            mit != vpKeyFrames.end() && !kf_found; ++mit)
         {
-            for(std::vector<KeyFrame*>::iterator mit=vpKeyFrames.begin();
-                mit !=vpKeyFrames.end() && !kf_found; mit++)
+            KeyFrame* pKf = *mit;
+            if(it->first == pKf->mnId)
             {
-                KeyFrame* pKf = *mit;
-                if(id == pKf->mnId)
-                {
-                    mConnectedKeyFrameWeights[pKf] = weight;
-                    kf_found = true;
-                }
+                mConnectedKeyFrameWeights[pKf] = it->second;
+                kf_found = true;
             }
         }
     }
 
     // Set up mvpOrderedConnectedKeyFrames
-    j = 0;
     for(std::map<long unsigned int,MapId>::iterator it = mvpOrderedConnectedKeyFrames_nId.begin();
-        it != mvpOrderedConnectedKeyFrames_nId.end();
-        ++it)
+        it != mvpOrderedConnectedKeyFrames_nId.end(); ++it)
     {
-        is_valid = it->second.is_valid;
-        if(is_valid)
+        if(it->second.is_valid)
         {
-            id = it->second.id;
-
             kf_found = false;
             for(std::vector<KeyFrame*>::iterator mit=vpKeyFrames.begin();
-                mit !=vpKeyFrames.end() && !kf_found; mit++)
+                mit !=vpKeyFrames.end() && !kf_found; ++mit)
             {
                 KeyFrame* pKf = *mit;
 
-                if(id == pKf->mnId)
+                if(it->second.id == pKf->mnId)
                 {
-                    ctr ++;
                     mvpOrderedConnectedKeyFrames.push_back(pKf);
                     kf_found = true;
                 }
-            }
-            if (kf_found == false)
-            {
-                //cout << "[" << id <<"] not found in KF " << mnId << endl;
             }
         }
     }

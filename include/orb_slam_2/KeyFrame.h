@@ -290,6 +290,7 @@ private:
 
     // Helping variables for loading an existing keyframe
     std::map<long unsigned int, MapId> mvpMapPoints_nId;
+    bool mbLoadedMapPoints_nId;
     std::map<long unsigned int, int> mConnectedKeyFrameWeights_nId;
     std::map<long unsigned int, MapId> mvpOrderedConnectedKeyFrames_nId;
     MapId mParent_KfId_map;
