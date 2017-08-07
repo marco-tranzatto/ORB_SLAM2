@@ -800,11 +800,6 @@ void KeyFrame::save(Archive &ar, const unsigned int version) const
 template<class Archive>
 void KeyFrame::load(Archive &ar, const unsigned int version)
 {
-    int nItems;bool is_id = false;
-    bool has_parent = false;
-    long unsigned int t_nId;
-    int ConKfWeight = 0;
-
     ar & nNextId;
     ar & mnId;
     ar & const_cast<long unsigned int &> (mnFrameId);
@@ -1162,7 +1157,6 @@ void KeyFrame::SetSpanningTree(std::vector<KeyFrame*> vpKeyFrames)
 
 void KeyFrame::SetGridParams(std::vector<KeyFrame*> vpKeyFrames)
 {
-    int weight;
     bool kf_found = false;
 
     // Set up mConnectedKeyFrameWeights
