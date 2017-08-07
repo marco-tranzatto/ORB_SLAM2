@@ -505,12 +505,9 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
 void System::SaveMap(const string &filename, bool *pSuccess,
                      string *pMessage)
 {
-    cout << "----------------- Testing saving map to:" << filename << std::endl;
-
     std::ofstream os(filename);
     {
-        boost::archive::binary_oarchive oa(os, boost::archive::no_header); // TODO check me
-        //boost::archive::binary_oarchive oa(os);
+        boost::archive::binary_oarchive oa(os);
         // Get Map Mutex
         unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
         oa << mpMap;
@@ -524,12 +521,9 @@ void System::SaveMap(const string &filename, bool *pSuccess,
 
 void System::LoadMap(const string &filename)
 {
-    cout << "++++++++++++++ Testing loading map form: " << filename << endl;
-
     {
         std::ifstream is(filename);
-        boost::archive::binary_iarchive ia(is, boost::archive::no_header); // TODO check me
-        //boost::archive::binary_iarchive ia(is);
+        boost::archive::binary_iarchive ia(is);
         // Get Map Mutex
         unique_lock<mutex> lock(mpMap->mMutexMapUpdate);
         ia >> mpMap;
@@ -539,33 +533,26 @@ void System::LoadMap(const string &filename)
 
     // Sorting
     std::vector<MapPoint*> MapPointPtr = mpMap->GetAllMapPoints();
-    unsigned int max_id = 0;
+    long unsigned int max_id = 0;
     for(std::vector<MapPoint*>::iterator mit=MapPointPtr.begin();
-        mit !=MapPointPtr.end(); mit++)
+        mit !=MapPointPtr.end(); ++mit)
     {
         if ((*mit)->mnId > max_id)
         {
             max_id = (*mit)->mnId;
         }
     }
-    cout << "size MapPointPtr: " << MapPointPtr.size() << endl;
-    cout << "max_id: " << max_id << endl;
 
     std::vector<MapPoint*> sortedPtr;
-
-    for(unsigned int i=0; i <= max_id; i++)
-    {
-        sortedPtr.push_back(NULL);
-    }
+    sortedPtr.resize(max_id);
 
     unsigned id;
     for(std::vector<MapPoint*>::iterator mit=MapPointPtr.begin();
-        mit !=MapPointPtr.end(); mit++)
+        mit != MapPointPtr.end(); ++mit)
     {
         id = (*mit)->mnId;
         sortedPtr[id] = *mit;
     }
-    cout << "size sortedPtr: " << sortedPtr.size() << endl;    
 
     vector<ORB_SLAM2::KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
     for(vector<ORB_SLAM2::KeyFrame*>::iterator it = vpKFs.begin();
@@ -580,7 +567,6 @@ void System::LoadMap(const string &filename)
         (*it)->SetSpanningTree(vpKFs);
         (*it)->SetGridParams(vpKFs);
     }
-    cout << "size vpKFs: " << vpKFs.size() << endl;
 
     vector<ORB_SLAM2::MapPoint*> vpMPs = mpMap->GetAllMapPoints();
     for(vector<ORB_SLAM2::MapPoint*>::iterator mit = vpMPs.begin();
@@ -589,7 +575,6 @@ void System::LoadMap(const string &filename)
         (*mit)->SetMap(mpMap);
         (*mit)->SetObservations(vpKFs);
     }
-    cout << "size vpMPs: " << vpMPs.size() << endl; 
 
     for(vector<ORB_SLAM2::KeyFrame*>::iterator it = vpKFs.begin();
         it != vpKFs.end(); ++it)
