@@ -443,7 +443,7 @@ void MapPoint::save(Archive &ar, const unsigned int version) const
 {
     if(mbBad)
     {
-        // Bad flag (we do not currently erase MapPoint from memory)
+        // Bad flag. MapPoint are marked as "bad" but are not currently removed
         return;
     }
 
@@ -552,12 +552,12 @@ template<class Archive, class DataStr>
     numItems = container.size();
     ar & numItems;
 
-    for (typename DataStr::const_iterator it = container.begin();
+    for(typename DataStr::const_iterator it = container.begin();
         it != container.end(); ++it)
     {
-        if (it->first == NULL)
+        if(it->first == NULL)
         {
-            cout << "{INFO}Map POint Save - Empty observation " << mnId << endl;
+            cout << "Map Point Save - Empty observation " << mnId << endl;
 
             isId = false;
             ar & isId;
@@ -578,7 +578,7 @@ template<class Archive, class DataStr>
     void MapPoint::SerializerSaveReferenceKeyframeId(Archive &ar,
         const DataStr &container) const
 {
-    if (container)
+    if(container)
     {
         bool isValid = true;
         ar & isValid;
@@ -601,10 +601,10 @@ template<class Archive, class DataStr>
     size_t tSize;
 
     ar & numItems;
-    for (int i = 0; i < numItems; ++i)
+    for(int i = 0; i < numItems; ++i)
     {
         ar & isId;
-        if (isId)
+        if(isId)
         {
             ar & itemId;
             ar & tSize;
@@ -621,7 +621,7 @@ template<class Archive, class DataStr>
     long unsigned int itemId;
 
     ar & isValid;
-    if (isValid)
+    if(isValid)
     {
         ar & itemId;
     }
@@ -640,28 +640,20 @@ void MapPoint::SetMap(Map* map)
 
 void MapPoint::SetObservations(std::vector<KeyFrame*> spKeyFrames)
 {
-    long unsigned int id;
-    long unsigned int kfRef_id;
-    size_t size;
-    int j = 0;
     bool foundReference = false;
-    kfRef_id = mref_KfId_pair.first;
-    bool isRefvalid = mref_KfId_pair.second;
 
     for (map<long unsigned int, size_t>::iterator it = mObservations_nId.begin();
-        it != mObservations_nId.end(); j++,++it)
+        it != mObservations_nId.end(); ++it)
     {
-        id = it->first;
-        size = it->second;
         {
             bool foundKeyframe = false;
             for(std::vector<KeyFrame*>::iterator mit=spKeyFrames.begin();
                 mit !=spKeyFrames.end() && !foundKeyframe; ++mit)
             {
                 KeyFrame* pKf = *mit;
-                if(id == pKf->mnId)
+                if(it->first == pKf->mnId)
                 {
-                    mObservations[pKf] = size;
+                    mObservations[pKf] = it->second;
                     foundKeyframe = true;
                 }
             }
@@ -669,10 +661,10 @@ void MapPoint::SetObservations(std::vector<KeyFrame*> spKeyFrames)
     }
 
     for(std::vector<KeyFrame*>::iterator mit=spKeyFrames.begin();
-        mit !=spKeyFrames.end(); mit++)
+        mit !=spKeyFrames.end(); ++mit)
     {
        KeyFrame* pKf = *mit;
-       if (isRefvalid && kfRef_id == pKf->mnId )
+       if(mref_KfId_pair.second && (mref_KfId_pair.first == pKf->mnId))
        {
             // Set the refernce Keyframe
             mpRefKF = pKf;
@@ -680,10 +672,12 @@ void MapPoint::SetObservations(std::vector<KeyFrame*> spKeyFrames)
        }
    }
 
-    if (!foundReference)
+    if(!foundReference)
     {
         mpRefKF = static_cast<KeyFrame*>(NULL);
-        cout << "refernce KF - " << kfRef_id << "is not found for mappoint " << mnId << endl;
+        cout <<
+            "Reference KF - " << mref_KfId_pair.first <<
+            "is not found for mappoint " << mnId << endl;
     }
 }
 
