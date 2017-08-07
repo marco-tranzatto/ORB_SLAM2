@@ -191,8 +191,8 @@ private:
         DataStr* pContainer);
 
     // Helping variables for loading an existing map point
-    std::map<long unsigned int,size_t> mObservations_nId;
-    std::pair<long unsigned int,bool> mref_KfId_pair;
+    std::map<long unsigned int, size_t> mObservations_nId;
+    std::pair<long unsigned int, bool> mref_KfId_pair;
 
 
 };
