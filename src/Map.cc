@@ -27,6 +27,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/vector.hpp>
+static const bool kDefaultPrintSerializationInfo = true;
 
 namespace ORB_SLAM2
 {
@@ -147,62 +148,37 @@ template void Map::load<boost::archive::binary_iarchive>(
 template<class Archive>
 void Map::save(Archive &ar, const unsigned int version) const
 {
-    // mspMapPoints
-    cout << "Saving mspMapPoints, size = " << mspMapPoints.size() << endl;
     ar & mspMapPoints;
-
-    // mspKeyFrames
-    cout << "Saving mspKeyFrames, size = " << mspKeyFrames.size() << endl;
     ar & mspKeyFrames;
-
-    // mvpKeyFrameOrigins
-    cout << "Saving mvpKeyFrameOrigins, size = " << mvpKeyFrameOrigins.size() << endl;
     ar & mvpKeyFrameOrigins;
-
-    // mnMaxKFid
-    cout << "Saving mnMaxKFid: " << mnMaxKFid << endl;
     ar & mnMaxKFid;
 
-    // TODO delete me
-    unsigned int test_data = 0xdeadbeef;
-    ar & test_data;
-    // End TODO delete me
+    if(kDefaultPrintSerializationInfo)
+    {
+        cout << "Saving map to file." << endl;
+        cout << "Saving mspMapPoints, size = " << mspMapPoints.size() << endl;
+        cout << "Saving mspKeyFrames, size = " << mspKeyFrames.size() << endl;
+        cout << "Saving mvpKeyFrameOrigins, size = " << mvpKeyFrameOrigins.size() << endl;
+        cout << "Saving mnMaxKFid: " << mnMaxKFid << endl;
+    }
 }
 
 template<class Archive>
 void Map::load(Archive &ar, const unsigned int version)
 {
-    // mspMapPoints
     ar & mspMapPoints;
-    cout << "Loaded mspMapPoints, size = " << mspMapPoints.size() << endl;
-
-    cout << "Map::load. mspKeyFrames" << endl;// TODO delete me
-    // mspKeyFrames
     ar & mspKeyFrames;
-    cout << "Loaded mspKeyFrames, size = " << mspKeyFrames.size() << endl;
-
-    cout << "Map::load. mvpKeyFrameOrigins" << endl;// TODO delete me
-    // mvpKeyFrameOrigins
     ar & mvpKeyFrameOrigins;
-    cout << "Loaded mvpKeyFrameOrigins, size = " << mvpKeyFrameOrigins.size() << endl;
-
-    cout << "Map::load. mnMaxKFid" << endl;// TODO delete me
-    // mnMaxKFid
     ar & mnMaxKFid;
-    cout << "Loaded mnMaxKFid: " << mnMaxKFid << endl;
-
-    // TODO delete me
-    unsigned int test_data;
-    ar & test_data;
-    if(test_data == 0xdeadbeef)
+    
+    if(kDefaultPrintSerializationInfo)
     {
-        cout << "~~~~~~~~~~~~~~~~~~~~ Test data passed." << endl;
+        cout << "Loading map from file." << endl;
+        cout << "Loaded mspMapPoints, size = " << mspMapPoints.size() << endl;
+        cout << "Loaded mspKeyFrames, size = " << mspKeyFrames.size() << endl;
+        cout << "Loaded mvpKeyFrameOrigins, size = " << mvpKeyFrameOrigins.size() << endl;
+        cout << "Loaded mnMaxKFid: " << mnMaxKFid << endl;
     }
-    else
-    {
-        cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Test data !!!NOT!! passed!" << endl;
-    }
-    // End TODO delete me
 }
 
 } //namespace ORB_SLAM
