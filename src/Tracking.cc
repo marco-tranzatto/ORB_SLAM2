@@ -274,16 +274,13 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 
 void Tracking::Track()
 {
-    cout << "Tracking::Track()" << endl;
     // TODO check me
     if((mdCounter<500) && mbLoadExistingMap) {
        mState=LOST;
        mdCounter++;
-       cout << "Tracking::Track(), mdCounter = " << mdCounter << endl;
     }
     if(mbFoundInitPose && mbLoadExistingMap){
         mState = OK;
-        cout << "Tracking::Track(), mState = OK" << endl;
     }
     // end TODO
 
@@ -299,11 +296,9 @@ void Tracking::Track()
 
     if(mState==NOT_INITIALIZED)
     {
-        cout << "Tracking::Track(), mState==NOT_INITIALIZED" << endl;
         // TODO check me
         if (mbLoadExistingMap)
         {
-            cout << "mbLoadExistingMap --> mState = LOST" << endl;
             mState = LOST;
             return;
         }
@@ -321,20 +316,17 @@ void Tracking::Track()
     }
     else
     {
-        cout << "Tracking. System is initialized. Track Frame." << endl;
         // System is initialized. Track Frame.
         bool bOK;
 
         // Initial camera pose estimation using motion model or relocalization (if tracking is lost)
         if(!mbOnlyTracking)
         {
-            cout << "!mbOnlyTracking." << endl;
             // Local Mapping is activated. This is the normal behaviour, unless
             // you explicitly activate the "only tracking" mode.
 
             if(mState==OK)
             {
-                cout << "mState==OK." << endl;
                 // Local Mapping might have changed some MapPoints tracked in last frame
                 CheckReplacedInLastFrame();
 
@@ -357,12 +349,10 @@ void Tracking::Track()
         }
         else
         {
-            cout << "Localization Mode: Local Mapping is deactivated." << endl;
             // Localization Mode: Local Mapping is deactivated
 
             if(mState==LOST)
             {
-                cout << "Localization Mode: Local Mapping is deactivated. mState==LOST" << endl;
                 bOK = Relocalization();
                 mbFoundInitPose = bOK;
             }
@@ -1386,7 +1376,6 @@ bool Tracking::Relocalization()
     // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
 
-    cout << "vpCandidateKFs.size: " << vpCandidateKFs.size() << endl;
 
     if(vpCandidateKFs.empty())
         return false;

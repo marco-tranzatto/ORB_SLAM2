@@ -69,11 +69,6 @@ public:
     // This avoid that two points are created simultaneously in separate threads (id conflict)
     std::mutex mMutexPointCreation;
 
-    // Testing todo delete me
-    std::set<int> test_2;
-    void CreateTestingSet();
-    cv::Mat test_open_cv_matrix;
-
 protected:
     std::set<MapPoint*> mspMapPoints;
     std::set<KeyFrame*> mspKeyFrames;

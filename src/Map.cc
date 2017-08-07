@@ -27,7 +27,6 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/set.hpp>
 #include <boost/serialization/vector.hpp>
-#include "orb_slam_2/OpenCvSerialization.h" // Todo delete me
 
 namespace ORB_SLAM2
 {
@@ -168,19 +167,6 @@ void Map::save(Archive &ar, const unsigned int version) const
     unsigned int test_data = 0xdeadbeef;
     ar & test_data;
     // End TODO delete me
-
-    /*nItems = mspKeyFrames.size();
-    cout << "{INFO}mspKeyFrames size = " << nItems << endl;
-    ar & nItems;
-    std::for_each(mspKeyFrames.begin(), mspKeyFrames.end(),
-        [&ar](KeyFrame* pKeyFrame) {ar & *pKeyFrame;} );*/
-
-
-    // test boost set serialization todo delete me
-    /*ar & test_2;
-    ar & test_open_cv_matrix;
-
-    cout << "Map::save, version: " << version << endl;*/
 }
 
 template<class Archive>
@@ -217,65 +203,6 @@ void Map::load(Archive &ar, const unsigned int version)
         cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Test data !!!NOT!! passed!" << endl;
     }
     // End TODO delete me
-
-    // TODO USE CLASS ACTUAL VARIABLE MEMBERS!!!
-    /*std::set<MapPoint*> tmp_mspMapPoints;
-    std::set<KeyFrame*> tmp_mspKeyFrames;
-    vector<KeyFrame*> tmp_mvpKeyFrameOrigins;
-    long unsigned int tmp_mnMaxKFid;
-
-    cout << "Map::load. mspMapPoints" << endl;// TODO delete me
-    // mspMapPoints
-    ar & tmp_mspMapPoints;
-    cout << "Loaded tmp_mspMapPoints, size = " << tmp_mspMapPoints.size() << endl;
-
-    cout << "Map::load. tmp_mspKeyFrames" << endl;// TODO delete me
-    // mspKeyFrames
-    ar & tmp_mspKeyFrames;
-    cout << "Loaded tmp_mspKeyFrames, size = " << tmp_mspKeyFrames.size() << endl;
-
-    cout << "Map::load. mvpKeyFrameOrigins" << endl;// TODO delete me
-    // mvpKeyFrameOrigins
-    ar & tmp_mvpKeyFrameOrigins;
-    cout << "Loaded tmp_mvpKeyFrameOrigins, size = " << tmp_mvpKeyFrameOrigins.size() << endl;
-
-    cout << "Map::load. mnMaxKFid" << endl;// TODO delete me
-    // mnMaxKFid
-    ar & tmp_mnMaxKFid;
-    cout << "Loaded tmp_mnMaxKFid: " << tmp_mnMaxKFid << endl;*/
-
-    // read test data
-    /*std::set<int> new_test_2;
-    cv::Mat new_test_open_cv_matrix;
-    cout << "Map::load, version: " << version << endl;
-
-    cout << "Testing set 2 after loading" << endl;
-    ar & new_test_2;
-    ar & new_test_open_cv_matrix;
-
-
-    for (std::set<int>::iterator it=new_test_2.begin(); it!=new_test_2.end(); ++it)
-      cout << (*it) << ", ";
-    cout << endl;
-
-    cout << "new_test_open_cv_matrix:" << endl;
-    cout << new_test_open_cv_matrix << endl;*/
-}
-
-void Map::CreateTestingSet()
-{
-    // create test data
-    for(int i = 0; i < 10; i++) {
-        test_2.insert(i);
-    }
-
-    cout << "Testing set 2 before saving" << endl;
-    for (std::set<int>::iterator it=test_2.begin(); it!=test_2.end(); ++it)
-      cout << (*it) << ", ";
-
-    cout << endl;
-
-    test_open_cv_matrix = (cv::Mat_<double>(3,3) << 55, 0, 0, 0, 28, 0, 0, 0, 33);
 }
 
 } //namespace ORB_SLAM

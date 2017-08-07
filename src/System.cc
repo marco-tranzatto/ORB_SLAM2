@@ -83,10 +83,6 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     if(loadExistingMap)
     {
         cout << endl << "An existing map is going to be loaded." << endl;
-        // TODO check me, should we force localization only?!
-        //ActivateLocalizationMode();
-        //cout << endl << "Forcing mbActivateLocalizationMode = true" << endl;
-        // end TODO
         LoadMap(loadMapFilePath);
     }
     else
@@ -510,9 +506,6 @@ void System::SaveMap(const string &filename, bool *pSuccess,
                      string *pMessage)
 {
     cout << "----------------- Testing saving map to:" << filename << std::endl;
-
-    // testing TODO delete me!!!
-    //mpMap->CreateTestingSet();
 
     std::ofstream os(filename);
     {
