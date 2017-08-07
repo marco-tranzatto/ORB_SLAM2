@@ -152,7 +152,6 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
         mState = LOST;
     }
     mbFoundInitPose = false;
-    mdCounter = 0;
 
 }
 
@@ -274,15 +273,9 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
 
 void Tracking::Track()
 {
-    // TODO check me
-    if((mdCounter<500) && mbLoadExistingMap) {
-       mState=LOST;
-       mdCounter++;
-    }
     if(mbFoundInitPose && mbLoadExistingMap){
         mState = OK;
     }
-    // end TODO
 
     if(mState==NO_IMAGES_YET)
     {
@@ -296,13 +289,11 @@ void Tracking::Track()
 
     if(mState==NOT_INITIALIZED)
     {
-        // TODO check me
         if (mbLoadExistingMap)
         {
             mState = LOST;
             return;
         }
-        // end TODO
 
         if(mSensor==System::STEREO || mSensor==System::RGBD)
             StereoInitialization();
@@ -536,7 +527,6 @@ void Tracking::Track()
 
 void Tracking::StereoInitialization()
 {
-    cout << "Tracking::StereoInitialization" << endl;
     if(mCurrentFrame.N>500)
     {
         // Set Frame pose to the origin
@@ -1375,7 +1365,6 @@ bool Tracking::Relocalization()
     // Relocalization is performed when tracking is lost
     // Track Lost: Query KeyFrame Database for keyframe candidates for relocalisation
     vector<KeyFrame*> vpCandidateKFs = mpKeyFrameDB->DetectRelocalizationCandidates(&mCurrentFrame);
-
 
     if(vpCandidateKFs.empty())
         return false;

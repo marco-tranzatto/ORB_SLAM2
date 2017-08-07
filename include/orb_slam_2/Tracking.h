@@ -218,8 +218,7 @@ protected:
 
     // Use an existing Map
     bool mbLoadExistingMap;
-    bool mbFoundInitPose; // TODO check me
-    int mdCounter; // TODO check me
+    bool mbFoundInitPose;
 };
 
 } //namespace ORB_SLAM
